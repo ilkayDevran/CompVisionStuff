@@ -6,7 +6,8 @@ import glob
 import csv
 import os
 import argparse
-from confusion import confusionMatrix as CM
+from pycm import *
+
 
 class PaintingMatcher:
     def __init__(self, descriptor, paintingPaths, ratio = 0.7, minMatches = 40):
@@ -19,12 +20,8 @@ class PaintingMatcher:
     def search(self, queryKps, queryDescs):
         results = {}
 
-        #counter = 0 # FOR DEBUGGING !!!!!!!!!!!!!!!!!!!!!**********
-
         # loop over the painting images
         for paintingPath in self.paintingPaths:
-
-            #print counter, #FOR DEBUGGING
 
             # load the query image, convert it to grayscale, and
             # extract keypoints and descriptors
@@ -36,9 +33,6 @@ class PaintingMatcher:
             # then update the results
             score = self.match(queryKps, queryDescs, kps, descs)
             results[paintingPath] = score
-
-            #counter += 1 # FOR DEBUGGING
-           
 
         # if matches were found, sort them
         if len(results) > 0:
@@ -62,8 +56,6 @@ class PaintingMatcher:
             # other
             if len(m) == 2 and m[0].distance < m[1].distance * self.ratio:
                 matches.append((m[0].trainIdx, m[0].queryIdx))
-
-        #print "Matches:" + str(len(matches))
 
         # check to see if there are enough matches to process
         if len(matches) > self.minMatches:
@@ -99,24 +91,12 @@ class PaintingDescriptor:
         return (kps, descs)
 
 
-# FUNCTIONS OF MAIN IN BELOW
-
-def getDefaultMatrix(h,w):
-    return [[0 for c in range(w)] for r in range(h)] 
-
-def setConfusionMatrix(input, output, matrix):
-    print "input: " + input + "output: " + output
-    matrix[int(input)][int(output)] += 1
-
-# MAIN PART---- NEED TO BE EDDITTED
+#---- MAIN PART ----
 def main():
 
-    # initialize the confusion matrix. Its size is depending on amount of Ground Truth
-    GTAmount = os.listdir("groundTruth")
-    #GTAmount.remove('.DS_Store') # remove returned hidden files by syscall
-    confMatrix = CM(h = len(GTAmount), w = len(GTAmount))
-    #confMatrix.toString()
-    #confMatrix.getTheView()
+    # initialize the actual and predicted vectors
+    y_act = []
+    y_pred = []
 
     # initialize the database dictionary of groundTruth
     db = {}
@@ -134,15 +114,13 @@ def main():
     pd = PaintingDescriptor()
     pm = PaintingMatcher(pd, glob.glob(os.path.join('groundTruth', '*.ppm')) , ratio = ratio, minMatches = minMatches)
 
-    getDefaultMatrix(5,3)
     src = 'queries'
-
-    src_files = os.listdir(src)
-    #print len(src_files)
-    count = 0
+    src_files = os.listdir(src) 
+    
+    count = 0 # to show the progress
     for image in src_files:
-	count = count+1
-	print (count,len(src_files))
+        count = count+1
+        print (count,len(src_files))
         print image
         full_file_name = os.path.join(src, image)
         # load the query image, convert it to grayscale, and extract
@@ -160,18 +138,28 @@ def main():
 
         # otherwise, matches were found
         else:
+            # prediction part is in here...
             score, paintingPath = results[0]
             (classOfSign, classNo) = db[paintingPath[paintingPath.rfind("/") + 1:]]
             print("{}. {:.2f}% : {} - {}".format(1, score * 100,
                 classOfSign, classNo))
 
-            # Some string manipulation stuffs
+            # Some string manipulation stuffs to get actual and predicted values to append into vectors
             classNoInString = image.index('.')
-            confMatrix.setConfusionMatrix(int(image[5:classNoInString]), int(classNo[1:]))
+            inpt = int(image[5:classNoInString])
+            outpt = int(classNo[1:])
+            y_act.append(inpt)
+            y_pred.append(outpt)
+    
         print "\n"
+    
+    # get the experiment results
+    calculateConfusionMatrix(inp=y_act, out=y_pred)
 
-    confMatrix.toString()
-    confMatrix.getTheView()
+# show results of Confusion Matrix calculations
+def calculateConfusionMatrix(inp, out):
+    cm = ConfusionMatrix(actual_vector=inp, predict_vector=out) # Create CM From Data
+    print(cm)
 
 if __name__ == '__main__':
     main()
