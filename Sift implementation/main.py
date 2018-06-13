@@ -123,12 +123,14 @@ def main():
         print (count,len(src_files))
         print image
         full_file_name = os.path.join(src, image)
+
         # load the query image, convert it to grayscale, and extract
         # keypoints and descriptors
         queryImage = cv2.imread(full_file_name)  # the query image
         gray = cv2.cvtColor(queryImage, cv2.COLOR_BGR2GRAY)
         (queryKps, queryDescs) = pd.describe(gray)
         print "Number of keypoints for query:",str(len(queryKps))
+        
         # try to match the book painting to a known database of images
         results = pm.search(queryKps, queryDescs)
 
