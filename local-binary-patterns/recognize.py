@@ -8,6 +8,11 @@ from imutils import paths
 import argparse
 import cv2
 
+# show results of Confusion Matrix calculations
+def calculateConfusionMatrix(inp, out):
+    cm = ConfusionMatrix(actual_vector=inp, predict_vector=out) # Create CM From Data
+    print(cm)
+
 def main():
 	# construct the argument parse and parse the arguments
 	ap = argparse.ArgumentParser()
@@ -58,18 +63,14 @@ def main():
 		y = int(outpt)
 		y_act.append(x) 
 		y_pred.append(y)
+
+	# get the experiment results
+	calculateConfusionMatrix(inp=y_act, out=y_pred)
 	#print y_act
 	#print
 	#print y_pred
 	#print
-
-	# get the experiment results
-    calculateConfusionMatrix(inp=y_act, out=y_pred)
-
-# show results of Confusion Matrix calculations
-def calculateConfusionMatrix(inp, out):
-    cm = ConfusionMatrix(actual_vector=inp, predict_vector=out) # Create CM From Data
-    print(cm)
+	
 
 if __name__ == '__main__':
     main()

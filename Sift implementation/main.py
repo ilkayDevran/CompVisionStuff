@@ -10,9 +10,9 @@ from pycm import *
 
 
 class PaintingMatcher:
-    def __init__(self, descriptor, paintingPaths, ratio = 0.7, minMatches = 40):
+    def __init__(self, descriptor, groundTruthsPath, ratio = 0.7, minMatches = 40):
         self.descriptor = descriptor
-        self.paintingPaths = paintingPaths   
+        self.groundTruthsPath = groundTruthsPath   
         self.ratio = ratio
         self.minMatches = minMatches
         self.distanceMethod = "BruteForce"
@@ -21,18 +21,18 @@ class PaintingMatcher:
         results = {}
 
         # loop over the painting images
-        for paintingPath in self.paintingPaths:
+        for groundTruth in self.groundTruthsPath:
 
             # load the query image, convert it to grayscale, and
             # extract keypoints and descriptors
-            painting = cv2.imread(paintingPath)
+            painting = cv2.imread(groundTruth)
             gray = cv2.cvtColor(painting, cv2.COLOR_BGR2GRAY)
             (kps, descs) = self.descriptor.describe(gray)
 
             # determine the number of matched, inlier keypoints,
             # then update the results
             score = self.match(queryKps, queryDescs, kps, descs)
-            results[paintingPath] = score
+            results[groundTruth] = score
 
         # if matches were found, sort them
         if len(results) > 0:
@@ -141,8 +141,8 @@ def main():
         # otherwise, matches were found
         else:
             # prediction part is in here...
-            score, paintingPath = results[0]
-            (classOfSign, classNo) = db[paintingPath[paintingPath.rfind("/") + 1:]]
+            score, groundTruth = results[0]
+            (classOfSign, classNo) = db[groundTruth[groundTruth.rfind("/") + 1:]]
             print("{}. {:.2f}% : {} - {}".format(1, score * 100,
                 classOfSign, classNo))
 

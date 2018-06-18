@@ -1,7 +1,8 @@
 
 import os
 import shutil
-import csv  
+import csv 
+import cv2 
  
 
 def csvOrganizer(path, n):
@@ -27,7 +28,7 @@ def csvOrganizer(path, n):
 		f.close()
 
 def queriesFolderOrganizer():
-	src = '/Users/ilkay/Desktop/Testing'
+	src = '/Users/ilkay/Desktop/imagesPPM/testing'
 	dest = 'queries'
 
 	src_files = os.listdir(src)
@@ -50,10 +51,58 @@ def queriesFolderOrganizer():
 					shutil.copy(full_file_name, os.path.join(dest, copied_file_name))
 					#print copied_file_name
 
+def cropedImagesFolderOrganizer():
+	src = '/Users/ilkay/Desktop/imagesPPM/testing'
+	dest = 'queries'
+
+	src_files = os.listdir(src)
+	
+	for i in range(len(src_files)):
+		if src_files[i].startswith('.') or src_files[i].endswith('.txt'):
+			continue
+		#print src_files[i]
+
+		sub_folder = os.listdir(src + '/' + src_files[i])
+		csvFile = None
+		# initialize the database dictionary of groundTruth
+		db = {}
+
+		# get the csv file in subfolder
+		for file_name in sub_folder:
+			if file_name.endswith('.csv'):
+				csvFile = os.path.join(src + '/' + src_files[i], file_name)
+				# loop over the database
+				for l in csv.reader(open(csvFile), delimiter=';'):
+				    # update the database using the image ID as the key
+				    db[l[0]] = l[1:]
+
+		# start cropping images according to coordinates in the csv files
+		for j in range(len(sub_folder)):
+			full_file_name = os.path.join(src + '/' + src_files[i], sub_folder[j])
+			if sub_folder[j].endswith(".ppm"):
+				(w, h, x1, y1, x2, y2, classId) = db[sub_folder[j]]
+				img = cv2.imread(full_file_name)
+				crop_img = img[int(x1):int(x2), int(y1):int(y2)]
+				#cv2.imwrite("cropped_" + full_file_name, crop_img)
+				#cv2.imshow("cropped", crop_img)
+				#cv2.waitKey(0) 
+				s = src_files[i]
+				d = None
+				if s[3] == 0:
+					d = s[4:]
+				else:
+					d = s[3:]
+				copied_file_name = 'query' + d + '.' + str(j) + '.ppm'
+				cv2.imwrite(copied_file_name, crop_img)
+				#shutil.copy(full_file_name, os.path.join(dest, copied_file_name))
+
+
+
 def main():
 
-	csvOrganizer('database.csv',61)	# configure the csv file
+	#csvOrganizer('database.csv',61)	# configure the csv file
 	#queriesFolderOrganizer()
+	cropedImagesFolderOrganizer()
 
 if __name__ == '__main__':
     main()
