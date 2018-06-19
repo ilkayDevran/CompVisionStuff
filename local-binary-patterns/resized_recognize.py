@@ -1,5 +1,6 @@
 # USAGE
 # python resized_recognize.py --training images/training --testing images/testing
+# python resized_recognize.py --training ROI_images/training --testing ROI_images/testing
 
 # import the necessary packages
 from localbinarypatterns import LocalBinaryPatterns
@@ -8,11 +9,7 @@ from imutils import paths
 import argparse
 import cv2
 import numpy as np
-
-# show results of Confusion Matrix calculations
-def calculateConfusionMatrix(inp, out):
-    cm = ConfusionMatrix(actual_vector=inp, predict_vector=out) # Create CM From Data
-    print(cm)
+from pycm import *
 
 
 def main():
@@ -35,7 +32,7 @@ def main():
 	y_pred = []
 
 	# loop over the training images
-	for imagePath in paths.list_images(args["training"]):
+	for imagePath in paths.list_files(args["training"], validExts=(".png",".ppm")):
 		# load the image, convert it to grayscale, and describe it
 		image = cv2.imread(imagePath)
 		gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
@@ -53,7 +50,7 @@ def main():
 	model.fit(data, labels)
 
 	# loop over the testing images
-	for imagePath in paths.list_images(args["testing"]):
+	for imagePath in paths.list_files(args["training"], validExts=(".png",".ppm")):
 		# load the image, convert it to grayscale, describe it,
 		# and classify it
 		image = cv2.imread(imagePath)
@@ -72,12 +69,13 @@ def main():
 
 	# get the experiment results
 	calculateConfusionMatrix(inp=y_act, out=y_pred)
-	#print y_act
-	#print
-	#print y_pred
-	#print
 
-	
+# show results of Confusion Matrix calculations
+def calculateConfusionMatrix(inp, out):
+	cm = ConfusionMatrix(actual_vector=inp, predict_vector=out)
+	# LBP_ROI_Resized_Intensity_Normalization
+	cm.save_html("LBP_ROI_Resized_Intensity_Normalization")
+	print(cm)
 
 if __name__ == '__main__':
     main()

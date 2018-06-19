@@ -7,6 +7,7 @@ import csv
 import os
 import argparse
 from pycm import *
+from random import randint
 
 
 class PaintingMatcher:
@@ -124,10 +125,10 @@ def main():
     #https://stackoverflow.com/questions/18262293/how-to-open-every-file-in-a-folder?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
     # initialize the paintingDescriptor and paintingMatcher
     pd = PaintingDescriptor()
-    pm = PaintingMatcher(pd, glob.glob(os.path.join('groundTruth', '*.ppm')) , ratio = ratio, minMatches = minMatches)
+    pm = PaintingMatcher(pd, glob.glob(os.path.join('ROI_groundTruth', '*.ppm')) , ratio = ratio, minMatches = minMatches)
 
 
-    src = 'queries'
+    src = 'ROI_queries' # ROI_queries  &   ROI_groundTruth   ^
     src_files = os.listdir(src) 
     
     count = 0 # to show the progress
@@ -149,6 +150,9 @@ def main():
             
             # try to match the book painting to a known database of images
             results = pm.search(queryKps, queryDescs)
+
+            # Some string manipulation stuffs to get actual and predicted values to append into vectors
+            classNoInString = image.index('.')
 
             # check to see if no results were found
             if len(results) == 0:
@@ -177,6 +181,7 @@ def main():
 # show results of Confusion Matrix calculations
 def calculateConfusionMatrix(inp, out):
     cm = ConfusionMatrix(actual_vector=inp, predict_vector=out) # Create CM From Data
+    cm.save_html("SIFT_ROI_Version") # SIFT_ROI_Version || SIFT_Normal_Version
     print(cm)
 
 if __name__ == '__main__':
