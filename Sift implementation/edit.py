@@ -10,6 +10,7 @@ from pycm import *
 from random import randint
 
 
+
 class PaintingMatcher:
     def __init__(self, descriptor, groundTruthsPath, ratio = 0.7, minMatches = 40):
         self.descriptor = descriptor
