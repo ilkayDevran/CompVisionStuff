@@ -1,10 +1,10 @@
 # USAGE
-# python resized_recognize.py --training images/training --testing images/testing
-# python resized_recognize.py --training ROI_images/training --testing ROI_images/testing
+# python main.py -t ../images/training -e ../images/testing
+# python main.py -t ../ROI_images/training -e ../ROI_images/testing
 
 # import the necessary packages
 from localbinarypatterns import LocalBinaryPatterns
-from sklearn.svm import LinearSVC
+from sklearn import svm
 from imutils import paths
 import argparse
 import cv2
@@ -53,17 +53,17 @@ def main():
 	# shuffle datas and labels before trained a model
 	X = np.array(data)
 	y = np.array(labels)
-	X, y = shuffle(X,y)
+	#X, y = shuffle(X,y)
 
 	# find best parameters before trained a model
 	best_parameters = svc_param_selection(X,y)
-	best_C = best_parameters.get("C")
 	best_gamma =  best_parameters.get("gamma")
-	print best_C, best_gamma
+	best_kernel = best_parameters.get("kernel")
+	print str(best_gamma), best_kernel
 	# raw_input()
 
 	# train a Linear SVM on the data
-	model = LinearSVC(C=best_C, random_state=42)
+	model = svm.NuSVC(nu = 0.01,kernel=best_kernel, gamma=best_gamma)
 	model.fit(X, y)
 
 
@@ -98,9 +98,11 @@ def main():
 
 def svc_param_selection(X, y, nfolds=None):
     Cs = [0.01, 0.1, 1.0, 10.0, 100.0, 0.001,2000.0]
-    gammas = [0.001, 0.01, 0.1, 1, 10, 20, 30]
-    param_grid = {'C': Cs, 'gamma' : gammas}
-    grid_sr = grid_search.GridSearchCV(svm.SVC(kernel='rbf'), param_grid, cv=nfolds)
+    gammas = [78.1, 78.2, 78.3, 78.4, 78.5, 78.6, 78.7, 78.8, 78.9, 79, 79.1, 79.2, 79.3, 79.4, 79.5, 79.6, 79.7, 79.8, 79.9, 80]
+    random_state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    kernels = ['rbf', 'linear', 'poly', 'sigmoid']
+    param_grid = {'gamma' : gammas, 'kernel' : kernels, 'random_state': random_state}
+    grid_sr = grid_search.GridSearchCV(svm.NuSVC(nu=0.01), param_grid, cv=nfolds, n_jobs= -1)
     grid_sr.fit(X, y)
     return grid_sr.best_params_
 

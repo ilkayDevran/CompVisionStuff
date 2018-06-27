@@ -1,3 +1,7 @@
+# USAGE
+# python main.py -t ../images/training
+# python main.py -t ../ROI_images/training
+
 import os
 import random
 import skimage.data
@@ -13,6 +17,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 import tensorflow as tf
 import matplotlib.pyplot as plt
+
+from imutils import paths
+import argparse
+import cv2
+import numpy as np
+from localbinarypatterns import LocalBinaryPatterns
 
 from torch.autograd import Variable
 from sklearn.preprocessing import OneHotEncoder
@@ -47,6 +57,30 @@ def check_images(images):
     for image in images:
         print("Shape: {}, Intensity Min: {}, Intensity Max: {}".format(image.shape, image.min(), image.max()))
     print("\n")
+
+def get_LBP_Features(dataSetPath):
+
+    # initialize the local binary patterns descriptor along with the data and label lists
+	desc = LocalBinaryPatterns(24, 8)
+	data = []
+	labels = []
+
+    # loop over the training images
+	for imagePath in paths.list_files(dataSetPath, validExts=(".png",".ppm")):
+		
+		# load the image, convert it to grayscale, and describe it
+		image = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (32, 32))
+		hist = desc.describe(resized_image)
+		hist = hist / max(hist)
+
+		# extract the label from the image path, then update the
+		# label and data lists
+		labels.append(imagePath.split("/")[-2])
+		data.append(hist)
+
+        return labels, data
 
 
 # pyTorch model.
@@ -140,6 +174,15 @@ def main(lr):
     
     # create siggNet object.
 if __name__ == "__main__":
+    # construct the argument parse and parse the arguments
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-t", "--training", required=True, help="path to the training images")
+    args = vars(ap.parse_args())
+
+    # get lbp features
+    (labels, data) = get_LBP_Features(args["training"])
+
+    """
     lr = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
     losses_array = []
     accuracy_array = []
@@ -154,4 +197,4 @@ if __name__ == "__main__":
     plt.plot(lr,accuracy_array)
     plt.show()
     print (accuracy_array)
-
+    """
