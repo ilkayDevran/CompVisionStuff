@@ -1,3 +1,6 @@
+
+# https://github.com/PENGZhaoqing/Hog-feature/blob/master/hog.py
+
 import cv2
 import numpy as np
 import math
