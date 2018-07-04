@@ -10,12 +10,9 @@ from imutils import paths
 import numpy as np
 import argparse
 import cv2
-import os
-import pdb
 
 
-# MANUAL VERSION
-def compute_manually(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it=False):
+def compute_manually(all_samples, labels, samples_amount_of_classes):
 
     histLength, sampleLength = all_samples.shape
 
@@ -82,98 +79,113 @@ def compute_manually(all_samples, labels, samples_amount_of_classes,p=24,r=8, pl
     # Transforming the samples onto the new subspace
     transformed = matrix_w.T.dot(all_samples)
     assert transformed.shape == (2,sampleLength), "The matrix is not 2x4527 dimensional."
-   
-    max_Y = 0.
-    max_X = 0.
-    min_Y = 0.
-    min_X = 0.
+    max_Y = max(transformed[1])  
+    max_X = max(transformed[0])
+    min_Y = min(transformed[1])
+    min_X = min(transformed[0])
+
+    print max_X ,max_Y, min_X, min_Y
+    """
+    for i in range(len(transformed[0])):
+        if 0.4 < transformed[0, i] and transformed[0, i] < 0.6:
+            print transformed[0,i], transformed[1, i]
+    raw_input()
+    """
+
+    tmp= []
+    for i in range(len(transformed[0])):
+        if -0.5 <= transformed[0, i] and transformed[0, i] <= -0.1:
+            tmp.append(transformed[1,i])
+    tmp = np.array(tmp)
+    tmp.sort()
+    print len(tmp)
 
     temp = 0
     for i,val in enumerate(samples_amount_of_classes):
-        #raw_input("Class name: {}".format(labels[i]))
-        max_X, min_X, max_Y, min_Y = find_max_min_X_Y(transformed[0,temp:val+temp],transformed[1,temp:val+temp],
-            max_X, min_X, max_Y, min_Y)
-        plt.plot(transformed[0,temp:val+temp], transformed[1,temp:val+temp],
-         'o', markersize=7, color=np.random.rand(3,), alpha=0.5, label=labels[i])
-        #plt.show()
+        plt.plot(transformed[0,temp:val], transformed[1,temp:val], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5, label=labels[i])
+        #print transformed[0,temp:val]
         temp = val
     plt.xlim([min_X,max_X])
     plt.ylim([min_Y, max_Y])
     plt.xlabel('x_values')
     plt.ylabel('y_values')
-    #plt.legend()
-    plt.title('-Manual- Points: '+ str(p) + " Radius:" + str(r))
+    plt.legend()
+    plt.title('Transformed samples with class labels')
 
-    if plot_it == False:
-        fname = '/Users/ilkay/Desktop/figures/manual/m_' + str(p) +"_" + str(r) + ".svg"
-        plt.savefig(fname, format='svg')
-    else:
-        plt.show()
+    plt.show()
 
-    print '-Manual- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
 
-# SKLEARN VERSION
-def use_sklearn(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it=False):
+
+def use_sklearn(all_samples, labels, samples_amount_of_classes):
     from sklearn.decomposition import PCA as sklearnPCA
 
     sklearn_pca = sklearnPCA(n_components=2)
     sklearn_transf = sklearn_pca.fit_transform(all_samples.T)
     sklearn_transf = sklearn_transf.T
 
-    max_Y = 0.
-    max_X = 0.
-    min_Y = 0.
-    min_X = 0.
+    max_Y = max(sklearn_transf[1])
+    max_X = max(sklearn_transf[0])
+    min_Y = min(sklearn_transf[1])
+    min_X = min(sklearn_transf[0])
+    
+    tmp= []
+    for i in range(len(sklearn_transf[0])):
+        if 0.5674 <= sklearn_transf[0, i] and sklearn_transf[0, i] <= 0.5826:
+            #print sklearn_transf[1,i]
+            tmp.append(sklearn_transf[1,i])
+    tmp = np.array(tmp)
+    tmp.sort()
+    print tmp
+    raw_input()
 
     temp = 0
     for i,val in enumerate(samples_amount_of_classes):
-
-        max_X, min_X, max_Y, min_Y = find_max_min_X_Y(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp],
-            max_X, min_X, max_Y, min_Y)
-        plt.plot(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5, label=labels[i])
+        plt.plot(sklearn_transf[0,temp:val],sklearn_transf[1,temp:val], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5)
+        #print sklearn_transf[0,temp:val]
         temp = val
-        # plt.show()
-        # raw_input("Class name: {}".format(labels[i]))
 
     plt.xlabel('x_values')
     plt.ylabel('y_values')
     plt.xlim([min_X,max_X])
     plt.ylim([min_Y, max_Y])
-    #plt.legend()
-    plt.title('-SKleanr- Points: '+ str(p) + " Radius:" + str(r))
-    if plot_it == False:
-        fname = '/Users/ilkay/Desktop/figures/sklearn/s_' + str(p) +"_" + str(r) + ".svg"
-        plt.savefig(fname, format='svg')
-    else:
-        plt.show()
-    print '-SKleanr- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
+    plt.legend()
+    plt.title('Transformed samples with class labels from matplotlib.mlab.PCA()')
+
+    plt.show()
 
 
-# Find max min X and Y for plotting
-def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
-    
-    max_of_x_list = max(x)
-    min_of_x_list = min(x)
-    max_of_y_list = max(y)
-    min_of_y_list = min(y)
 
-    if max_of_x_list > max_X:
-        max_X = max_of_x_list
-    elif min_of_x_list < min_X :
-        min_X = min_of_x_list
+def use_matplotlib(all_samples, labels, samples_amount_of_classes):
+    print "mat"
+    from matplotlib.mlab import PCA as mlabPCA
 
-    if max_of_y_list > max_Y:
-        max_Y = max_of_y_list
-    elif min_of_y_list < min_Y :
-        min_Y = min_of_y_list
+    mlab_pca = mlabPCA(all_samples.T)
+    #print('PC axes in terms of the measurement axes scaled by the standard deviations:\n', mlab_pca.Wt)
+    max_Y = max(mlab_pca.Y[:,1])
+    max_X = max(mlab_pca.Y[:,0])
+    min_Y = min(mlab_pca.Y[:,1])
+    min_X = min(mlab_pca.Y[:,0])
+    #print max_Y, max_X, min_Y, min_X
+    #raw_input()
+    temp = 0
+    for i,val in enumerate(samples_amount_of_classes):
+        plt.plot(mlab_pca.Y[temp:val,0], mlab_pca.Y[temp:val,1], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5)
+        temp = val
+    plt.xlabel('x_values')
+    plt.ylabel('y_values')
+    plt.xlim([min_X,max_X])
+    plt.ylim([min_Y, max_Y])
+    plt.legend()
+    plt.title('Transformed samples with class labels from matplotlib.mlab.PCA()')
 
-    return (max_X, min_X, max_Y, min_Y)
+    plt.show()
 
 
-# GET LBP FEATURES 
-def get_all_samples(path, p=24, r=8 ):
+
+
+def get_all_samples(path):
     # initialize the local binary patterns descriptor along with the data and label lists
-    desc = LocalBinaryPatterns(p, r)
+    desc = LocalBinaryPatterns(24, 8)
     data = []
     labels = []
     classSamplesList = []
@@ -181,18 +193,16 @@ def get_all_samples(path, p=24, r=8 ):
     currentClass = None
     flag = False
 
-    class_list = os.listdir(path)
-    class_list.remove('.DS_Store')
-    class_list.remove('Readme.txt')
-    counter = len(class_list)
+    zscore = 0
 
-    lastClassPath = ''
     # loop over the training images
     for imagePath in paths.list_files(path, validExts=(".png",".ppm")):
+        if zscore == 100:
+            break
+        zscore = zscore + 1
         if (flag == False):
             currentClass = imagePath.split("/")[-2]
             labels.append(currentClass)
-            counter -= 1
             flag = True
         else:
             if imagePath.split("/")[-2] != currentClass:
@@ -201,11 +211,7 @@ def get_all_samples(path, p=24, r=8 ):
                 samples_amount_of_classes.append(len(data))
                 data = []
                 labels.append(currentClass)
-                counter -= 1
-        if counter == 0:
-            lastClassPath = imagePath
-            break
-                	
+        
         # load the image, convert it to grayscale, and describe it
         image = cv2.imread(imagePath)
         gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
@@ -215,36 +221,16 @@ def get_all_samples(path, p=24, r=8 ):
         
         # extract the label from the image path
         data.append(hist)
+        
 
-    data = []
-    head, _ = os.path.split(lastClassPath)
-
-    for imagePath in paths.list_files(head, validExts=(".png", ".ppm")):
-        # load the image, convert it to grayscale, and describe it
-        image = cv2.imread(imagePath)
-        gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-        resized_image = cv2.resize(gray, (32, 32))
-        hist = desc.describe(resized_image)
-        hist = hist / max(hist)
-	    # extract the label from the image path
-        data.append(hist)
-
-    classSamplesList.append(np.transpose(np.array(data)))
-    samples_amount_of_classes.append(len(data))
-
-
+    
     all_samples =  tuple(classSamplesList)
     all_samples = np.concatenate(all_samples, axis=1)
+    print all_samples.shape
 
-    """
-    for i, val in enumerate(samples_amount_of_classes):
-        print i, val
-    raw_input()
-    """
     return all_samples, labels ,samples_amount_of_classes
 
 
-# MAIN
 if __name__ == '__main__':
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
@@ -258,27 +244,14 @@ if __name__ == '__main__':
         help="Calculate with Sklearn")
     args = vars(ap.parse_args())
 
-
     # get all_samples list
     all_samples, labels, samples_amount_of_classes = get_all_samples(args["training"])
 
     # choose calculation mod 
     calculationMod = args["Mod"]
     if calculationMod == 's' or calculationMod == 'sklearn':
-        use_sklearn(all_samples, labels, samples_amount_of_classes,plot_it=True)
-    elif calculationMod == 't' or calculationMod == 'test':
-        radiuses = [2,4,8,16,32]
-        points = [2,4,6,8,16,32,64,128,256]
-        total = str(len(radiuses)*len(points))
-        print "Total = " + total
-        counter = 0
-        for r in radiuses:
-            for p in points:
-                print "\n Remaining --> " + str(counter) + "/" + total 
-                counter += 1
-                all_samples, labels, samples_amount_of_classes = get_all_samples(args["training"],
-                    p=p,r=r)
-                compute_manually(all_samples, labels, samples_amount_of_classes,p,r)
-                use_sklearn(all_samples, labels, samples_amount_of_classes,p,r)
+        use_sklearn(all_samples, labels, samples_amount_of_classes)
+    elif calculationMod == 'm' or calculationMod == 'mat' or calculationMod == 'matplot':
+        use_matplotlib(all_samples, labels, samples_amount_of_classes)
     else:
-        compute_manually(all_samples, labels, samples_amount_of_classes, plot_it=True)
+        compute_manually(all_samples, labels, samples_amount_of_classes)
