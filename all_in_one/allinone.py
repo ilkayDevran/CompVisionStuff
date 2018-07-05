@@ -19,6 +19,7 @@ import os
 # GET LBP FEATURES 
 def get_LBP_Features(trainingPath, testingPath, p, r):
 	from localbinarypatterns import LocalBinaryPatterns
+	from sklearn.utils import shuffle
 
 	# initialize the local binary patterns descriptor along with the data and label lists
 	desc = LocalBinaryPatterns(p, r)
@@ -56,6 +57,13 @@ def get_LBP_Features(trainingPath, testingPath, p, r):
 		# label and data lists
 		test_labels.append(imagePath.split("/")[-2])
 		test_data.append(hist)
+
+	data = np.array(data)
+	labels = np.array(labels)
+	test_data = np.array(test_data)
+	test_labels = np.array(test_labels)
+
+	data, labels = shuffle(data,labels)
 
 	print "[INFO] LBP Features are ready!"
 
@@ -113,11 +121,6 @@ def get_HOG_Features():
 
 # USE kNN Classifier
 def kNN(data, labels, test_data, test_labels, neighbors, jobs):
-	# turn all list into numpy array
-	data = np.array(data)
-	labels = np.array(labels)
-	test_data = np.array(test_data)
-	test_labels = np.array(test_labels)
 
 	# train and evaluate a k-NN classifer
 	model = KNeighborsClassifier(n_neighbors=neighbors, n_jobs=jobs)
@@ -126,8 +129,27 @@ def kNN(data, labels, test_data, test_labels, neighbors, jobs):
 	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
 
 # USE SVM Classifier
-def SVM(data, labels, test_data, test_labels):
-	pass
+def SVM(data, labels, test_data, test_labels, best_kernel='rbf', best_gamma='30'):
+	from sklearn import svm
+
+	# train a Linear SVM on the data
+	model = svm.SVC(C=1.0, kernel=best_kernel, gamma=best_gamma)
+	model.fit(data, labels)
+	#model = svm.SVR(kernel= best_kernel)
+	"""STAYED HERE!"""
+
+	predicted=[]
+	for d in test_data:
+		p = model.predict([d])[0]
+		print p
+		raw_input()
+		predicted.append()
+	for y, y_ in zip(test_labels, predicted):
+		print y, y_
+		raw_input()
+	match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
+	acc = float(match_count) / float(len(test_labels))
+	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
 
 
 
@@ -276,12 +298,11 @@ def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
 
 
 
-
 # CHOOSE THE RUNNING MOD OF THE SCRIPT
 def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
 	if x == 1: 
 		print "\n[INFO] LBP-KNN"
-		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing)
+		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 
 	elif x == 2:
@@ -294,7 +315,8 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
 
 	elif x == 4:
 		print "\n[INFO] LBP-SVM"
-
+		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
+		SVM(data, labels, test_data, test_labels)
 	elif x == 5:
 		print "\n[INFO] SIFT-SVM"
 
@@ -319,6 +341,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
 	else:
 		print "Please choose supported mods 1-7 to run this program."
 		x = int(raw_input('>>> '))
+		print "\n--[RESULTS]--"
 		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points)
 
 
@@ -342,9 +365,9 @@ if __name__ == '__main__':
 		help="radius parameter in LBP implementation")
 
 	args = vars(ap.parse_args())
-	
+
 	print """
-	Please choose the running mod you want between 1-7,
+	Please choose the running mod you want between 1-9,
 	Using k-NN as clasifier with:
 		1. LBP
 		2. SIFT
@@ -359,6 +382,7 @@ if __name__ == '__main__':
 		9. HOG
 	"""
 	x = int(raw_input('>>> '))
+	print "\n--[RESULTS]--"
 	chooseRunningMod(x,args["training"], args["testing"],args["neighbors"],
 		args["jobs"], args["radius"], args["points"])
 	
