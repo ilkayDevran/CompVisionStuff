@@ -1,6 +1,6 @@
 # USAGE
-# python knn_classifier.py -t /Users/ilkay/Desktop/git/CompVisionStuff/ROI_images/training -e /Users/ilkay/Desktop/git/CompVisionStuff/ROI_images/testing
-# python knn_classifier.py --dataset kaggle_dogs_vs_cats -k 10
+# python allinone.py -t ../ROI_images/training -e ../ROI_images/testing
+# python allinone.py -t ../ROI_images/training -e ../ROI_images/testing -k 10 -j -1 -r 8 -p 24
 
 # import the necessary packages
 from sklearn.neighbors import KNeighborsClassifier
@@ -342,20 +342,21 @@ if __name__ == '__main__':
 		help="radius parameter in LBP implementation")
 
 	args = vars(ap.parse_args())
-
-	print """\nPlease choose the running mod you want between 1-7,
-Using k-NN as clasifier with:
-  1. LBP
-  2. SIFT
-  3. HOG
-Using SVM as clasifier with:
-  4. LBP
-  5. SIFT
-  6. HOG
-To see PCA of:
-  7. LBP
-  8. SIFT
-  9. HOG
+	
+	print """
+	Please choose the running mod you want between 1-7,
+	Using k-NN as clasifier with:
+		1. LBP
+		2. SIFT
+		3. HOG
+	Using SVM as clasifier with:
+		4. LBP
+		5. SIFT
+		6. HOG
+	To see PCA of:
+		7. LBP
+		8. SIFT
+		9. HOG
 	"""
 	x = int(raw_input('>>> '))
 	chooseRunningMod(x,args["training"], args["testing"],args["neighbors"],
