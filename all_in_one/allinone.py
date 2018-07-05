@@ -13,8 +13,11 @@ import cv2
 import os
 
 
+
+########### FEATURE EXTRACTION PART ##############
+
 # GET LBP FEATURES 
-def get_LBP_Features(trainingPath, testingPath, p=24, r=8):
+def get_LBP_Features(trainingPath, testingPath, p, r):
 	from localbinarypatterns import LocalBinaryPatterns
 
 	# initialize the local binary patterns descriptor along with the data and label lists
@@ -58,7 +61,6 @@ def get_LBP_Features(trainingPath, testingPath, p=24, r=8):
 
 	return (data, labels, test_data, test_labels)
 
-
 # GET SIFT FEATURES
 def get_SIFT_Features(trainingPath, testingPath):
 	from scaleinvariantfeaturetransform import ScaleInvariantFeatureTransform
@@ -101,11 +103,13 @@ def get_SIFT_Features(trainingPath, testingPath):
 
 	return (key_points, descriptors, labels, test_key_points, test_descriptors, test_labels)
 
-
 # GET HOG FEATURES
 def get_HOG_Features():
 	pass
 
+
+
+########### CLASSIFIER PART ##############
 
 # USE kNN Classifier
 def kNN(data, labels, test_data, test_labels, neighbors, jobs):
@@ -121,74 +125,15 @@ def kNN(data, labels, test_data, test_labels, neighbors, jobs):
 	acc = model.score(test_data, test_labels)
 	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
 
-
 # USE SVM Classifier
 def SVM(data, labels, test_data, test_labels):
 	pass
 
 
 
-########### PCA PART ##############
+### FEATURE DATA ORGANIZER TO PLOT PCA ###
 
-# SKLEARN TO GET PCA
-def use_sklearn(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it=False):
-    from sklearn.decomposition import PCA as sklearnPCA
-
-    sklearn_pca = sklearnPCA(n_components=2)
-    sklearn_transf = sklearn_pca.fit_transform(all_samples.T)
-    sklearn_transf = sklearn_transf.T
-
-    max_Y = 0.
-    max_X = 0.
-    min_Y = 0.
-    min_X = 0.
-
-    temp = 0
-    for i,val in enumerate(samples_amount_of_classes):
-
-        max_X, min_X, max_Y, min_Y = find_max_min_X_Y(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp],
-            max_X, min_X, max_Y, min_Y)
-        plt.plot(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5, label=labels[i])
-        temp = val
-        # plt.show()
-        # raw_input("Class name: {}".format(labels[i]))
-
-    plt.xlabel('x_values')
-    plt.ylabel('y_values')
-    plt.xlim([min_X,max_X])
-    plt.ylim([min_Y, max_Y])
-    #plt.legend()
-    plt.title('-SKleanr- Points: '+ str(p) + " Radius:" + str(r))
-    if plot_it == False:
-        fname = '/Users/ilkay/Desktop/figures/sklearn/s_' + str(p) +"_" + str(r) + ".svg"
-        plt.savefig(fname, format='svg')
-    else:
-        plt.show()
-    print '-SKleanr- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
-
-
-# Find max min X and Y for plotting
-def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
-    
-    max_of_x_list = max(x)
-    min_of_x_list = min(x)
-    max_of_y_list = max(y)
-    min_of_y_list = min(y)
-
-    if max_of_x_list > max_X:
-        max_X = max_of_x_list
-    elif min_of_x_list < min_X :
-        min_X = min_of_x_list
-
-    if max_of_y_list > max_Y:
-        max_Y = max_of_y_list
-    elif min_of_y_list < min_Y :
-        min_Y = min_of_y_list
-
-    return (max_X, min_X, max_Y, min_Y)
-
-
-# GET LBP FEATURES FOR TRAINING DATA SET 
+# GET LBP FEATURES FOR TRAINING DATA SET  
 def get_all_samples_LBP(path, p=24, r=8 ):
 	from localbinarypatterns import LocalBinaryPatterns
 
@@ -258,6 +203,126 @@ def get_all_samples_LBP(path, p=24, r=8 ):
 
 	return all_samples, labels ,samples_amount_of_classes
 
+# GET SIFT FEATURES FOR TRAINING DATA SET 
+def get_all_samples_SIFT(training):
+	all_samples, labels, samples_amount_of_classes = 0,0,0 #delete this row
+	return all_samples, labels, samples_amount_of_classes
+
+# GET HOG FEATURES FOR TRAINING DATA SET 
+def get_all_samples_HOG(training):
+	all_samples, labels, samples_amount_of_classes = 0,0,0 #delete this row
+	return all_samples, labels, samples_amount_of_classes
+
+
+
+########### PCA PART ##############
+
+# SKLEARN TO GET PCA
+def use_sklearn(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it=False):
+    from sklearn.decomposition import PCA as sklearnPCA
+    from matplotlib import pyplot as plt
+
+    sklearn_pca = sklearnPCA(n_components=2)
+    sklearn_transf = sklearn_pca.fit_transform(all_samples.T)
+    sklearn_transf = sklearn_transf.T
+
+    max_Y = 0.
+    max_X = 0.
+    min_Y = 0.
+    min_X = 0.
+
+    temp = 0
+    for i,val in enumerate(samples_amount_of_classes):
+
+        max_X, min_X, max_Y, min_Y = find_max_min_X_Y(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp],
+            max_X, min_X, max_Y, min_Y)
+        plt.plot(sklearn_transf[0,temp:val+temp],sklearn_transf[1,temp:val+temp], 'o', markersize=7, color=np.random.rand(3,), alpha=0.5, label=labels[i])
+        temp = val
+        # plt.show()
+        # raw_input("Class name: {}".format(labels[i]))
+
+    plt.xlabel('x_values')
+    plt.ylabel('y_values')
+    plt.xlim([min_X,max_X])
+    plt.ylim([min_Y, max_Y])
+    #plt.legend()
+    plt.title('-SKleanr- Points: '+ str(p) + " Radius:" + str(r))
+    if plot_it == False:
+        fname = '/Users/ilkay/Desktop/figures/sklearn/s_' + str(p) +"_" + str(r) + ".svg"
+        plt.savefig(fname, format='svg')
+    else:
+        plt.show()
+    print '-SKleanr- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
+
+# Find max min X and Y for plotting
+def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
+    
+    max_of_x_list = max(x)
+    min_of_x_list = min(x)
+    max_of_y_list = max(y)
+    min_of_y_list = min(y)
+
+    if max_of_x_list > max_X:
+        max_X = max_of_x_list
+    elif min_of_x_list < min_X :
+        min_X = min_of_x_list
+
+    if max_of_y_list > max_Y:
+        max_Y = max_of_y_list
+    elif min_of_y_list < min_Y :
+        min_Y = min_of_y_list
+
+    return (max_X, min_X, max_Y, min_Y)
+
+
+
+
+# CHOOSE THE RUNNING MOD OF THE SCRIPT
+def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
+	if x == 1: 
+		print "\n[INFO] LBP-KNN"
+		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing)
+		kNN(data, labels, test_data, test_labels, neighbors, jobs)
+
+	elif x == 2:
+		print "\n[INFO] SIFT-KNN"
+		(key_points, descriptors, labels, test_key_points, test_descriptors, test_labels) = get_SIFT_Features(training, testing)
+		kNN(descriptors, labels, test_descriptors, test_labels, neighbors, jobs)
+
+	elif x == 3:
+		print "\n[INFO] HOG-KNN"
+
+	elif x == 4:
+		print "\n[INFO] LBP-SVM"
+
+	elif x == 5:
+		print "\n[INFO] SIFT-SVM"
+
+	elif x == 6:
+		print "\n[INFO] HOG-SVM"
+
+	elif x == 7:
+		print "\n[INFO] PCA of LBP"
+		all_samples, labels, samples_amount_of_classes = get_all_samples_LBP(training, p=points, r=radius)
+		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
+
+	elif x == 8:
+		print "\n[INFO] PCA of SIFT"
+		all_samples, labels, samples_amount_of_classes = get_all_samples_SIFT(training)
+		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
+
+	elif x == 9:
+		print "\n[INFO] PCA of HOG"
+		# get all_samples list
+		all_samples, labels, samples_amount_of_classes = get_all_samples_HOG(training)
+		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
+	else:
+		print "Please choose supported mods 1-7 to run this program."
+		x = int(raw_input('>>> '))
+		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points)
+
+
+
 # MAIN
 if __name__ == '__main__':
 	# construct the argument parse and parse the arguments
@@ -266,26 +331,36 @@ if __name__ == '__main__':
 		help="path to training dataset")
 	ap.add_argument("-e", "--testing", required=True,
 		help="path to testing dataset")
+
 	ap.add_argument("-k", "--neighbors", type=int, default=1,
 		help="# of nearest neighbors for classification")
 	ap.add_argument("-j", "--jobs", type=int, default=-1,
 		help="# of jobs for k-NN distance (-1 uses all available cores)")
-	ap.add_argument("-d", "--desc", type=str, default='lbp',
-		help="choose feature extractor sift, lbp, hog")
-	ap.add_argument("-c", "--classifier", type=str, default='knn',
-		help="choose classifier knn, svm")
+	ap.add_argument("-r", "--radius", type=int, default=8,
+		help="radius parameter in LBP implementation")
+	ap.add_argument("-p", "--points", type=int, default=24,
+		help="radius parameter in LBP implementation")
+
 	args = vars(ap.parse_args())
 
+	print """\nPlease choose the running mod you want between 1-7,
+Using k-NN as clasifier with:
+  1. LBP
+  2. SIFT
+  3. HOG
+Using SVM as clasifier with:
+  4. LBP
+  5. SIFT
+  6. HOG
+To see PCA of:
+  7. LBP
+  8. SIFT
+  9. HOG
+	"""
+	x = int(raw_input('>>> '))
+	chooseRunningMod(x,args["training"], args["testing"],args["neighbors"],
+		args["jobs"], args["radius"], args["points"])
+	
 
-	print "\n[INFO] LBP-KNN"
-	(data, labels, test_data, test_labels) = get_LBP_Features(args["training"], args["testing"])
-	kNN(data, labels, test_data, test_labels, args["neighbors"], args["jobs"])
-
-	print "\n[INFO] SIFT-KNN"
-	(key_points, descriptors, labels, test_key_points, test_descriptors, test_labels) = get_SIFT_Features(args["training"], args["testing"])
-	for i, val in enumerate(descriptors):
-		print len(val)
-		print labels[i]
-		raw_input()
-	kNN(descriptors, labels, test_descriptors, test_labels, args["neighbors"], args["jobs"])
+	
 
