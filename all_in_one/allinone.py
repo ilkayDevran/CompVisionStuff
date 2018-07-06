@@ -112,9 +112,64 @@ def get_SIFT_Features(trainingPath, testingPath):
 	return (key_points, descriptors, labels, test_key_points, test_descriptors, test_labels)
 
 # GET HOG FEATURES
-def get_HOG_Features():
-	pass
+def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
+	from hog import Hog_descriptor
 
+	# initialize the local binary patterns descriptor along with the data and label lists
+	data = []
+	labels = []
+	test_data = []
+	test_labels = []
+    
+	# loop over the training images
+	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+		
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector, image = hog.extract()
+		v = np.array(vector)
+		print v.shape
+		print len(vector)
+		for i in v:
+			print i
+		raw_input()
+		#print len(vector)
+		# extract the label from the image path, then update the
+		# label and data lists
+		labels.append(imagePath.split("/")[-2])
+		data.append(vector)
+
+	# loop over the testing images
+	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+		
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector, image = hog.extract()
+
+		# extract the label from the image path, then update the
+		# label and data lists
+		test_labels.append(imagePath.split("/")[-2])
+		test_data.append(vector)
+
+	data = np.array(data)
+	labels = np.array(labels)
+	test_data = np.array(test_data)
+	test_labels = np.array(test_labels)
+
+	print data.shape
+
+	print "[INFO] HOG Features are ready!"
+	raw_input()
+	return (data, labels, test_data, test_labels)
 
 
 ########### CLASSIFIER PART ##############
@@ -129,24 +184,18 @@ def kNN(data, labels, test_data, test_labels, neighbors, jobs):
 	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
 
 # USE SVM Classifier
-def SVM(data, labels, test_data, test_labels, best_kernel='rbf', best_gamma='30'):
+def SVM(data, labels, test_data, test_labels, best_kernel='linear', best_gamma='30'):
 	from sklearn import svm
 
 	# train a Linear SVM on the data
-	model = svm.SVC(C=1.0, kernel=best_kernel, gamma=best_gamma)
+	model = svm.SVC(C=852.25, kernel=best_kernel)
 	model.fit(data, labels)
-	#model = svm.SVR(kernel= best_kernel)
-	"""STAYED HERE!"""
 
 	predicted=[]
 	for d in test_data:
 		p = model.predict([d])[0]
-		print p
-		raw_input()
-		predicted.append()
-	for y, y_ in zip(test_labels, predicted):
-		print y, y_
-		raw_input()
+		predicted.append(p)
+		
 	match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
 	acc = float(match_count) / float(len(test_labels))
 	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
@@ -299,7 +348,7 @@ def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
 
 
 # CHOOSE THE RUNNING MOD OF THE SCRIPT
-def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
+def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cell_size, bin_size):
 	if x == 1: 
 		print "\n[INFO] LBP-KNN"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
@@ -312,7 +361,8 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points):
 
 	elif x == 3:
 		print "\n[INFO] HOG-KNN"
-
+		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
+		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 	elif x == 4:
 		print "\n[INFO] LBP-SVM"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
@@ -363,6 +413,10 @@ if __name__ == '__main__':
 		help="radius parameter in LBP implementation")
 	ap.add_argument("-p", "--points", type=int, default=24,
 		help="radius parameter in LBP implementation")
+	ap.add_argument("-c", "--cell_size", type=int, default=16,
+		help="cell_size parameter in HOG implementation")
+	ap.add_argument("-b", "--bin_size", type=int, default=8,
+		help="bin_size parameter in HOG implementation")
 
 	args = vars(ap.parse_args())
 
@@ -384,8 +438,4 @@ if __name__ == '__main__':
 	x = int(raw_input('>>> '))
 	print "\n--[RESULTS]--"
 	chooseRunningMod(x,args["training"], args["testing"],args["neighbors"],
-		args["jobs"], args["radius"], args["points"])
-	
-
-	
-
+		args["jobs"], args["radius"], args["points"],args["cell_size"],args["bin_size"])

@@ -30,11 +30,12 @@ and increase the amount of time it takes to process your image:
 from __future__ import print_function
 import argparse
 import datetime
+from imutils import paths
 import imutils
 import cv2
  
 
-def get_hog_features(win_stride, padding, mean_shift, trainingSetPath, scale):
+def get_hog_features(trainingSetPath, win_stride, padding, mean_shift, scale):
     # evaluate the command line arguments (using the eval function like
     # this is not good form, but let's tolerate it for the example)
     winStride = eval(win_stride)
@@ -57,38 +58,25 @@ def get_hog_features(win_stride, padding, mean_shift, trainingSetPath, scale):
         # open image
         img = cv2.imread(imagePath, cv2.IMREAD_GRAYSCALE)
         # resized_image = cv2.resize(img, (32, 32))  # RESIZING
-
+        rects, weights = hog.detectMultiScale(img, winStride=winStride,
+            padding=padding, scale=scale, useMeanshiftGrouping=meanShift)
+        print (rects)
         # get hog features
         """STAYED HERE!"""
 
 		# extract the label from the image path, then update the
 		# label and data lists
         labels.append(imagePath.split("/")[-2])
-        data.append(vector)
-        print labels
+        data.append(weights)
+        
 
 
-    """Need to edit here to get features. With a way I need to bring this into the loop"""
-    # detect people in the image
-    start = datetime.datetime.now()
-    (rects, weights) = hog.detectMultiScale(image, winStride=winStride,
-        padding=padding, scale=scale, useMeanshiftGrouping=meanShift)
-    print("[INFO] detection took: {}s".format(
-        (datetime.datetime.now() - start).total_seconds()))
-    
-    # draw the original bounding boxes
-    for (x, y, w, h) in rects:
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    
-    # show the output image
-    cv2.imshow("Detections", image)
-    cv2.waitKey(0)
-
+   
 if __name__ == '__main__':
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--image", required=True,
-        help="path to the input image")
+    ap.add_argument("-t", "--training", required=True,
+		help="path to training dataset")
     ap.add_argument("-w", "--win-stride", type=str, default="(8, 8)",
         help="window stride")
     ap.add_argument("-p", "--padding", type=str, default="(16, 16)",
@@ -99,4 +87,4 @@ if __name__ == '__main__':
         help="whether or not mean shift grouping should be used")
     args = vars(ap.parse_args())
 
-    get_hog_features(args["win_stride"], args["padding"],args["mean_shift"], args["image"], args["scale"])
+    get_hog_features(args["training"], args["win_stride"], args["padding"],args["mean_shift"], args["scale"])

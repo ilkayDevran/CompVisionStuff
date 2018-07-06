@@ -33,7 +33,6 @@ def main(trainingSetPath, testingSetPath, cell_size=8, bin_size=8):
 		# label and data lists
         labels.append(imagePath.split("/")[-2])
         data.append(vector)
-        print labels
 
 
     # loop over the testing images
