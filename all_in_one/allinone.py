@@ -277,14 +277,85 @@ def get_all_samples_LBP(path, p=24, r=8 ):
 	return all_samples, labels ,samples_amount_of_classes
 
 # GET SIFT FEATURES FOR TRAINING DATA SET 
-def get_all_samples_SIFT(training):
+def get_all_samples_SIFT(path):
 	all_samples, labels, samples_amount_of_classes = 0,0,0 #delete this row
 	return all_samples, labels, samples_amount_of_classes
 
 # GET HOG FEATURES FOR TRAINING DATA SET 
-def get_all_samples_HOG(training):
-	all_samples, labels, samples_amount_of_classes = 0,0,0 #delete this row
-	return all_samples, labels, samples_amount_of_classes
+def get_all_samples_HOG(path, cell_size, bin_size):
+	from hog import Hog_descriptor
+
+	data = []
+	labels = []
+	classSamplesList = []
+	samples_amount_of_classes = []
+	currentClass = None
+	flag = False
+
+	class_list = os.listdir(path)
+	class_list.remove('.DS_Store')
+	class_list.remove('Readme.txt')
+	counter = len(class_list)
+
+	lastClassPath = ''
+	# loop over the training images
+	for imagePath in paths.list_files(path, validExts=(".png",".ppm")):
+		if (flag == False):
+			currentClass = imagePath.split("/")[-2]
+			labels.append(currentClass)
+			counter -= 1
+			flag = True
+		else:
+			if imagePath.split("/")[-2] != currentClass:
+				currentClass = imagePath.split("/")[-2]
+				classSamplesList.append(np.transpose(np.array(data)))
+				samples_amount_of_classes.append(len(data))
+				data = []
+				labels.append(currentClass)
+				counter -= 1
+		if counter == 0:
+			lastClassPath = imagePath
+			break
+					
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector = hog.extract()
+		v = np.array(vector)
+		# extract the label from the image path, then update the
+		# label and data lists
+		labels.append(imagePath.split("/")[-2])
+		data.append(vector)
+
+	data = []
+	head, _ = os.path.split(lastClassPath)
+
+	for imagePath in paths.list_files(head, validExts=(".png", ".ppm")):
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector = hog.extract()
+		v = np.array(vector)
+		# extract the label from the image path, then update the
+		# label and data lists
+		labels.append(imagePath.split("/")[-2])
+		data.append(vector)
+
+
+	classSamplesList.append(np.transpose(np.array(data)))
+	samples_amount_of_classes.append(len(data))
+
+
+	all_samples =  tuple(classSamplesList)
+	all_samples = np.concatenate(all_samples, axis=1)
+
+	return all_samples, labels ,samples_amount_of_classes
 
 
 
@@ -357,7 +428,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 
 	elif x == 2:
-		print "\n[INFO] SIFT-KNN"
+		print "\n[INFO] SIFT-KNN" # COMPLETE
 		(key_points, descriptors, labels, test_key_points, test_descriptors, test_labels) = get_SIFT_Features(training, testing)
 		kNN(descriptors, labels, test_descriptors, test_labels, neighbors, jobs)
 
@@ -365,12 +436,14 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		print "\n[INFO] HOG-KNN"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
+
 	elif x == 4:
 		print "\n[INFO] LBP-SVM"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
 		SVM(data, labels, test_data, test_labels)
+
 	elif x == 5:
-		print "\n[INFO] SIFT-SVM"
+		print "\n[INFO] SIFT-SVM"  # COMPLETE
 
 	elif x == 6:
 		print "\n[INFO] HOG-SVM"
@@ -383,20 +456,20 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 
 	elif x == 8:
-		print "\n[INFO] PCA of SIFT"
+		print "\n[INFO] PCA of SIFT"   # COMPLETE
 		all_samples, labels, samples_amount_of_classes = get_all_samples_SIFT(training)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 
 	elif x == 9:
 		print "\n[INFO] PCA of HOG"
 		# get all_samples list
-		all_samples, labels, samples_amount_of_classes = get_all_samples_HOG(training)
+		all_samples, labels, samples_amount_of_classes = get_all_samples_HOG(training, cell_size, bin_size)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 	else:
 		print "Please choose supported mods 1-7 to run this program."
 		x = int(raw_input('>>> '))
 		print "\n--[RESULTS]--"
-		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points)
+		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points, cell_size, bin_size)
 
 
 
