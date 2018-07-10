@@ -4,6 +4,7 @@
 import cv2
 import numpy as np
 import math
+import itertools
 
 
 class Hog_descriptor():
@@ -31,7 +32,7 @@ class Hog_descriptor():
                              j * self.cell_size:(j + 1) * self.cell_size]
                 cell_gradient_vector[i][j] = self.cell_gradient(cell_magnitude, cell_angle)
 
-        hog_image = self.render_gradient(np.zeros([height, width]), cell_gradient_vector)
+        #hog_image = self.render_gradient(np.zeros([height, width]), cell_gradient_vector)
         hog_vector = []
         for i in range(cell_gradient_vector.shape[0] - 1):
             for j in range(cell_gradient_vector.shape[1] - 1):
@@ -46,7 +47,12 @@ class Hog_descriptor():
                     normalize = lambda block_vector, magnitude: [element / magnitude for element in block_vector]
                     block_vector = normalize(block_vector, magnitude)
                 hog_vector.append(block_vector)
-        return hog_vector, hog_image
+
+        sub = list(itertools.chain.from_iterable(hog_vector))
+        #print len(sub)
+        # print sub
+        # raw_input()
+        return sub # hog_vector #, hog_image
 
     def global_gradient(self):
         gradient_values_x = cv2.Sobel(self.img, cv2.CV_64F, 1, 0, ksize=5)

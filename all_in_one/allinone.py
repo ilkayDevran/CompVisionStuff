@@ -130,13 +130,15 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 		resized_image = cv2.resize(gray, (48, 48))
 		# get hog features
 		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
-		vector, image = hog.extract()
+		vector = hog.extract()
 		v = np.array(vector)
+		""""
 		print v.shape
 		print len(vector)
 		for i in v:
 			print i
-		raw_input()
+		# STAYED HERE VECTOR SHAPE IS 2D I need to make it 1D with a way
+		raw_input()"""
 		#print len(vector)
 		# extract the label from the image path, then update the
 		# label and data lists
@@ -153,7 +155,7 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 
 		# get hog features
 		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
-		vector, image = hog.extract()
+		vector = hog.extract()
 
 		# extract the label from the image path, then update the
 		# label and data lists
@@ -372,6 +374,8 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 
 	elif x == 6:
 		print "\n[INFO] HOG-SVM"
+		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
+		SVM(data, labels, test_data, test_labels)
 
 	elif x == 7:
 		print "\n[INFO] PCA of LBP"
