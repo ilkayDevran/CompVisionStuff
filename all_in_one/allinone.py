@@ -123,23 +123,16 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
     
 	# loop over the training images
 	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
-		
 		# open image
 		img = cv2.imread(imagePath)
 		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
 		resized_image = cv2.resize(gray, (48, 48))
+
 		# get hog features
 		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
 		vector = hog.extract()
 		v = np.array(vector)
-		""""
-		print v.shape
-		print len(vector)
-		for i in v:
-			print i
-		# STAYED HERE VECTOR SHAPE IS 2D I need to make it 1D with a way
-		raw_input()"""
-		#print len(vector)
+
 		# extract the label from the image path, then update the
 		# label and data lists
 		labels.append(imagePath.split("/")[-2])
@@ -167,10 +160,8 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 	test_data = np.array(test_data)
 	test_labels = np.array(test_labels)
 
-	print data.shape
-
 	print "[INFO] HOG Features are ready!"
-	raw_input()
+
 	return (data, labels, test_data, test_labels)
 
 
@@ -220,8 +211,11 @@ def get_all_samples_LBP(path, p=24, r=8 ):
 	flag = False
 
 	class_list = os.listdir(path)
-	class_list.remove('.DS_Store')
-	class_list.remove('Readme.txt')
+	if '.DS_Store' in class_list:
+		class_list.remove('.DS_Store')
+	if 'Readme.txt' in class_list:
+		class_list.remove('Readme.txt')
+
 	counter = len(class_list)
 
 	lastClassPath = ''
@@ -293,8 +287,11 @@ def get_all_samples_HOG(path, cell_size, bin_size):
 	flag = False
 
 	class_list = os.listdir(path)
-	class_list.remove('.DS_Store')
-	class_list.remove('Readme.txt')
+	if '.DS_Store' in class_list:
+		class_list.remove('.DS_Store')
+	if 'Readme.txt' in class_list:
+		class_list.remove('Readme.txt')
+
 	counter = len(class_list)
 
 	lastClassPath = ''
@@ -362,7 +359,7 @@ def get_all_samples_HOG(path, cell_size, bin_size):
 ########### PCA PART ##############
 
 # SKLEARN TO GET PCA
-def use_sklearn(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it=False):
+def use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=False):
     from sklearn.decomposition import PCA as sklearnPCA
     from matplotlib import pyplot as plt
 
@@ -389,14 +386,17 @@ def use_sklearn(all_samples, labels, samples_amount_of_classes,p=24,r=8, plot_it
     plt.ylabel('y_values')
     plt.xlim([min_X,max_X])
     plt.ylim([min_Y, max_Y])
-    #plt.legend()
-    plt.title('-SKleanr- Points: '+ str(p) + " Radius:" + str(r))
+    # plt.legend()
+    # plt.title('-SKleanr- Points: '+ str(p) + " Radius:" + str(r))
+    plt.title('-SKleanr-')
+    
     if plot_it == False:
-        fname = '/Users/ilkay/Desktop/figures/sklearn/s_' + str(p) +"_" + str(r) + ".svg"
-        plt.savefig(fname, format='svg')
+		fname = '/Users/ilkay/Desktop/figures/sklearn/figure.svg'
+		#fname = '/Users/ilkay/Desktop/figures/sklearn/s_' + str(p) +"_" + str(r) + ".svg"
+		plt.savefig(fname, format='svg')
     else:
-        plt.show()
-    print '-SKleanr- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
+		plt.show()
+    # print '-SKleanr- Points: '+ str(p) + ' Radius:' + str(r) + ' DONE!'
 
 # Find max min X and Y for plotting
 def find_max_min_X_Y(x, y, max_X, min_X, max_Y, min_Y):
@@ -428,7 +428,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 
 	elif x == 2:
-		print "\n[INFO] SIFT-KNN" # COMPLETE
+		print "\n[INFO] SIFT-KNN"	# COMPLETE
 		(key_points, descriptors, labels, test_key_points, test_descriptors, test_labels) = get_SIFT_Features(training, testing)
 		kNN(descriptors, labels, test_descriptors, test_labels, neighbors, jobs)
 
@@ -443,7 +443,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		SVM(data, labels, test_data, test_labels)
 
 	elif x == 5:
-		print "\n[INFO] SIFT-SVM"  # COMPLETE
+		print "\n[INFO] SIFT-SVM"	# COMPLETE
 
 	elif x == 6:
 		print "\n[INFO] HOG-SVM"
@@ -456,7 +456,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 
 	elif x == 8:
-		print "\n[INFO] PCA of SIFT"   # COMPLETE
+		print "\n[INFO] PCA of SIFT"	# COMPLETE
 		all_samples, labels, samples_amount_of_classes = get_all_samples_SIFT(training)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 
