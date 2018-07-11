@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 from imutils import paths
 import argparse
 import cv2
-import numpy as np
 from localbinarypatterns import LocalBinaryPatterns
 
 from torch.autograd import Variable
@@ -51,6 +50,7 @@ def load_data(data_dir):
             # read images and corresponding labels.
             images.append(skimage.data.imread(f))
             labels.append(int(d))
+    
     return images, labels
 
 def check_images(images):
@@ -58,15 +58,25 @@ def check_images(images):
         print("Shape: {}, Intensity Min: {}, Intensity Max: {}".format(image.shape, image.min(), image.max()))
     print("\n")
 
-def get_LBP_Features(dataSetPath):
 
-    # initialize the local binary patterns descriptor along with the data and label lists
-	desc = LocalBinaryPatterns(24, 8)
+
+
+########### FEATURE EXTRACTION PART ##############
+
+# GET LBP FEATURES 
+def get_LBP_Features(trainingPath, testingPath ,p=24, r=8):
+	from localbinarypatterns import LocalBinaryPatterns
+	from sklearn.utils import shuffle
+
+	# initialize the local binary patterns descriptor along with the data and label lists
+	desc = LocalBinaryPatterns(p, r)
 	data = []
 	labels = []
+	test_data = []
+	test_labels = []
 
-    # loop over the training images
-	for imagePath in paths.list_files(dataSetPath, validExts=(".png",".ppm")):
+	# loop over the training images
+	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
 		
 		# load the image, convert it to grayscale, and describe it
 		image = cv2.imread(imagePath)
@@ -80,7 +90,128 @@ def get_LBP_Features(dataSetPath):
 		labels.append(imagePath.split("/")[-2])
 		data.append(hist)
 
-        return labels, data
+	# loop over the testing images
+	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+
+		# load the image, convert it to grayscale, describe it, and classify it
+		image = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (32, 32))
+		hist = desc.describe(resized_image)
+		hist = hist / max(hist)
+
+		# extract the label from the image path, then update the
+		# label and data lists
+		test_labels.append(imagePath.split("/")[-2])
+		test_data.append(hist)
+
+	data = np.array(data)
+	labels = np.array(labels)
+	#test_data = np.array(test_data)
+	#test_labels = np.array(test_labels)
+
+	data, labels = shuffle(data,labels)
+
+	print "[INFO] LBP Features are ready!"
+
+	return (data, labels, test_data, test_labels)
+
+# GET SIFT FEATURES
+def get_SIFT_Features(trainingPath, testingPath):
+	from scaleinvariantfeaturetransform import ScaleInvariantFeatureTransform
+
+	desc = ScaleInvariantFeatureTransform()
+
+	key_points = []
+	descriptors = []
+	labels = []
+
+	test_key_points = []
+	test_descriptors = []
+	test_labels = []
+
+	# loop over the training images
+	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+		
+		# load the image, convert it to grayscale, and describe it
+		image = cv2.imread(imagePath)
+		(kps, descs) = desc.describe(image)
+		#print "Number of keypoints for image: ", str(len(kps))
+
+		key_points.append(kps)
+		descriptors.append(descs)
+		labels.append(imagePath.split("/")[-2])
+
+	# loop over the testing images
+	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+		
+		# load the image, convert it to grayscale, and describe it
+		image = cv2.imread(imagePath)
+		(kps, descs) = desc.describe(image)
+		#print "Number of keypoints for image: ", str(len(kps))
+
+		test_key_points.append(kps)
+		test_descriptors.append(descs)
+		test_labels.append(imagePath.split("/")[-2])
+
+	print "[INFO] SIFT Features are ready!"
+
+	return (key_points, descriptors, labels, test_key_points, test_descriptors, test_labels)
+
+# GET HOG FEATURES
+def get_HOG_Features(trainingPath, testingPath, cell_size=16, bin_size=8):
+	from hog import Hog_descriptor
+
+	# initialize the local binary patterns descriptor along with the data and label lists
+	data = []
+	labels = []
+	test_data = []
+	test_labels = []
+    
+	# loop over the training images
+	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector = hog.extract()
+		v = np.array(vector)
+
+		# extract the label from the image path, then update the
+		# label and data lists
+		labels.append(imagePath.split("/")[-2])
+		data.append(vector)
+
+	# loop over the testing images
+	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+		
+		# open image
+		img = cv2.imread(imagePath)
+		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+		resized_image = cv2.resize(gray, (48, 48))
+
+		# get hog features
+		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+		vector = hog.extract()
+
+		# extract the label from the image path, then update the
+		# label and data lists
+		test_labels.append(imagePath.split("/")[-2])
+		test_data.append(vector)
+
+	data = np.array(data)
+	labels = np.array(labels)
+	test_data = np.array(test_data)
+	test_labels = np.array(test_labels)
+
+	print "[INFO] HOG Features are ready!"
+
+	return (data, labels, test_data, test_labels)
+
+
 
 
 # pyTorch model.
@@ -108,8 +239,9 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
     d_out = 62
     
     learning_rate = lr
-    num_of_epochs = 10000
+    num_of_epochs = 200 #10000
     log_freq = 100
+    """
     # get images and labels.
     images, labels = load_data(train_data_dir)
     test_images, test_labels = load_data(test_data_dir)
@@ -122,18 +254,26 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
     test_images_ = []
     for image in images:
         images_.append(skimage.transform.resize(image, (SIZE_W, SIZE_H, CHANNELS), mode='constant'))
-    
+
     for image in test_images:
         test_images_.append(skimage.transform.resize(image, (SIZE_W, SIZE_H, CHANNELS), mode='constant'))
     check_images(images_[:5])
-    
+
     images_array = array(images_)
     labels_array = array(labels)
+    """"
+    images_array, labels_array, test_images_, test_labels = get_LBP_Features(train_data_dir, test_data_dir, p=24, r=8)
+    #images_array, labels_array, test_images_, test_labels = get_HOG_Features(train_data_dir, test_data_dir, cell_size=16, bin_size=8)
+    
+    #SIFT doesn't work for now cause feature vector length issue
+    #images_array, labels_array, test_images_, test_labels = get_SIFT_Features(train_data_dir, test_data_dir)
+    
+    vector_lentgh=len(images_array[0])
 
     graph = tf.Graph()
 
     with graph.as_default():
-        images_ph = tf.placeholder(tf.float32, [None, SIZE_W, SIZE_H, CHANNELS])
+        images_ph = tf.placeholder(tf.float32, [None, SIZE_W, SIZE_H, CHANNELS]) # [None, vector_lentgh]
         labels_ph = tf.placeholder(tf.int32, [None])
 
         images_flatten = tf.contrib.layers.flatten(images_ph)
@@ -160,9 +300,10 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
             loss_array.append(loss_value)
 
     #test the model.
-    predicted = session.run([predicted_labels], 
-                            feed_dict={images_ph: test_images_})[0]
+    predicted = session.run([predicted_labels], feed_dict={images_ph: test_images_})[0]
     match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
+    print match_count
+    raw_input()
     accuracy = float(match_count) / float(len(test_labels))
     
     return loss_array, accuracy
@@ -177,10 +318,6 @@ if __name__ == "__main__":
     ap.add_argument("-e", "--testing", required=True, help="path to the test images")
     args = vars(ap.parse_args())
 
-    # get lbp features
-    # (labels, data) = get_LBP_Features(args["training"])
-
-    
     lr = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
     losses_array = []
     accuracy_array = []
@@ -189,7 +326,7 @@ if __name__ == "__main__":
         loss_array, accuracy = main(value, args["training"], args["testing"])
         losses_array.append(loss_array)
         accuracy_array.append(accuracy)
-        print accuracy
+        print "\n[INFO] Accuracy:" + str(accuracy)
         plt.plot(loss_array)
         plt.show()
     plt.plot(lr,accuracy_array)
