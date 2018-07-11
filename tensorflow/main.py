@@ -1,6 +1,6 @@
 # USAGE
-# python main.py -t ../images/training
-# python main.py -t ../ROI_images/training
+# python main.py -t ../images/training  -e ../images/testing
+# python main.py -t ../ROI_images/training -e ../ROI_images/testing
 
 import os
 import random
@@ -97,12 +97,7 @@ class signNet(torch.nn.Module):
         actvOut = self.relu(linearOut)
         return F.log_softmax(actvOut)
 
-def main(lr):
-
-    #define directories.
-    ROOT_PATH = "/home/can/deep_traffic_sign/traffic-signs-tensorflow"
-    train_data_dir = os.path.join(ROOT_PATH, "datasets/Training")
-    test_data_dir = os.path.join(ROOT_PATH, "datasets/Testing")
+def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_images/testing"):
     
     # define globals.
     SIZE_W = 32
@@ -171,24 +166,27 @@ def main(lr):
     accuracy = float(match_count) / float(len(test_labels))
     
     return loss_array, accuracy
+
     
     # create siggNet object.
+
 if __name__ == "__main__":
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-t", "--training", required=True, help="path to the training images")
+    ap.add_argument("-e", "--testing", required=True, help="path to the test images")
     args = vars(ap.parse_args())
 
     # get lbp features
-    (labels, data) = get_LBP_Features(args["training"])
+    # (labels, data) = get_LBP_Features(args["training"])
 
-    """
+    
     lr = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
     losses_array = []
     accuracy_array = []
     for value in lr:
         print ("Running model for learning rate: {}".format(value))
-        loss_array, accuracy = main(value)
+        loss_array, accuracy = main(value, args["training"], args["testing"])
         losses_array.append(loss_array)
         accuracy_array.append(accuracy)
         print accuracy
@@ -197,4 +195,3 @@ if __name__ == "__main__":
     plt.plot(lr,accuracy_array)
     plt.show()
     print (accuracy_array)
-    """
