@@ -87,7 +87,7 @@ def get_LBP_Features(trainingPath, testingPath ,p=24, r=8):
 
 		# extract the label from the image path, then update the
 		# label and data lists
-		labels.append(imagePath.split("/")[-2])
+		labels.append(int(imagePath.split("/")[-2]))
 		data.append(hist)
 
 	# loop over the testing images
@@ -102,7 +102,7 @@ def get_LBP_Features(trainingPath, testingPath ,p=24, r=8):
 
 		# extract the label from the image path, then update the
 		# label and data lists
-		test_labels.append(imagePath.split("/")[-2])
+		test_labels.append(int(imagePath.split("/")[-2]))
 		test_data.append(hist)
 
 	data = np.array(data)
@@ -182,7 +182,7 @@ def get_HOG_Features(trainingPath, testingPath, cell_size=16, bin_size=8):
 
 		# extract the label from the image path, then update the
 		# label and data lists
-		labels.append(imagePath.split("/")[-2])
+		labels.append(int(imagePath.split("/")[-2]))
 		data.append(vector)
 
 	# loop over the testing images
@@ -199,7 +199,7 @@ def get_HOG_Features(trainingPath, testingPath, cell_size=16, bin_size=8):
 
 		# extract the label from the image path, then update the
 		# label and data lists
-		test_labels.append(imagePath.split("/")[-2])
+		test_labels.append(int(imagePath.split("/")[-2]))
 		test_data.append(vector)
 
 	data = np.array(data)
@@ -261,9 +261,9 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
 
     images_array = array(images_)
     labels_array = array(labels)
-    """"
-    images_array, labels_array, test_images_, test_labels = get_LBP_Features(train_data_dir, test_data_dir, p=24, r=8)
-    #images_array, labels_array, test_images_, test_labels = get_HOG_Features(train_data_dir, test_data_dir, cell_size=16, bin_size=8)
+    """
+    #images_array, labels_array, test_images_, test_labels = get_LBP_Features(train_data_dir, test_data_dir, p=24, r=8)
+    images_array, labels_array, test_images_, test_labels = get_HOG_Features(train_data_dir, test_data_dir, cell_size=16, bin_size=8)
     
     #SIFT doesn't work for now cause feature vector length issue
     #images_array, labels_array, test_images_, test_labels = get_SIFT_Features(train_data_dir, test_data_dir)
@@ -273,7 +273,7 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
     graph = tf.Graph()
 
     with graph.as_default():
-        images_ph = tf.placeholder(tf.float32, [None, SIZE_W, SIZE_H, CHANNELS]) # [None, vector_lentgh]
+        images_ph = tf.placeholder(tf.float32, [None, vector_lentgh]) # [None, SIZE_W, SIZE_H, CHANNELS]
         labels_ph = tf.placeholder(tf.int32, [None])
 
         images_flatten = tf.contrib.layers.flatten(images_ph)
