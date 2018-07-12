@@ -25,39 +25,6 @@ from localbinarypatterns import LocalBinaryPatterns
 
 from torch.autograd import Variable
 from sklearn.preprocessing import OneHotEncoder
-from numpy import array
-
-def load_data(data_dir):
-    directories = []
-    # parse data directory.
-    for d in os.listdir(data_dir):
-        # find image directories and store.
-        if os.path.isdir(os.path.join(data_dir, d)):
-            directories.append(d)
-    # empty lists for labels and images.
-    labels = []
-    images = []
-    # parse directories.
-    for d in directories:
-        label_dir = os.path.join(data_dir, d)
-        file_names = []
-        # parse sub-folders.
-        for f in os.listdir(label_dir):
-            if f.endswith(".ppm"):
-                # find images, store to list.
-                file_names.append(os.path.join(label_dir, f))
-        for f in file_names:
-            # read images and corresponding labels.
-            images.append(skimage.data.imread(f))
-            labels.append(int(d))
-    
-    return images, labels
-
-def check_images(images):
-    for image in images:
-        print("Shape: {}, Intensity Min: {}, Intensity Max: {}".format(image.shape, image.min(), image.max()))
-    print("\n")
-
 
 
 
@@ -213,7 +180,6 @@ def get_HOG_Features(trainingPath, testingPath, cell_size=16, bin_size=8):
 
 
 
-
 # pyTorch model.
 class signNet(torch.nn.Module):
     
@@ -228,52 +194,22 @@ class signNet(torch.nn.Module):
         actvOut = self.relu(linearOut)
         return F.log_softmax(actvOut)
 
-def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_images/testing"):
-    
+def main(lr, train_data_dir, test_data_dir, images_array, labels_array, test_images_, test_labels, placeholder_shape, num_of_epochs, log_freq):
+
     # define globals.
     SIZE_W = 32
     SIZE_H = 32
     CHANNELS = 3
-    
+
     d_in = SIZE_W * SIZE_H * CHANNELS
     d_out = 62
-    
+
     learning_rate = lr
-    num_of_epochs = 200 #10000
-    log_freq = 100
-    """
-    # get images and labels.
-    images, labels = load_data(train_data_dir)
-    test_images, test_labels = load_data(test_data_dir)
-
-    check_images(images[:5])
-    # print number of train set and number of unique labels.
-    print ("There are total {} unique labels in train set for {} images.\n".format(len(set(labels)), len(images)))
-    # resize images.
-    images_ = []
-    test_images_ = []
-    for image in images:
-        images_.append(skimage.transform.resize(image, (SIZE_W, SIZE_H, CHANNELS), mode='constant'))
-
-    for image in test_images:
-        test_images_.append(skimage.transform.resize(image, (SIZE_W, SIZE_H, CHANNELS), mode='constant'))
-    check_images(images_[:5])
-
-    images_array = array(images_)
-    labels_array = array(labels)
-    """
-    #images_array, labels_array, test_images_, test_labels = get_LBP_Features(train_data_dir, test_data_dir, p=24, r=8)
-    images_array, labels_array, test_images_, test_labels = get_HOG_Features(train_data_dir, test_data_dir, cell_size=16, bin_size=8)
-    
-    #SIFT doesn't work for now cause feature vector length issue
-    #images_array, labels_array, test_images_, test_labels = get_SIFT_Features(train_data_dir, test_data_dir)
-    
-    vector_lentgh=len(images_array[0])
 
     graph = tf.Graph()
 
     with graph.as_default():
-        images_ph = tf.placeholder(tf.float32, [None, vector_lentgh]) # [None, SIZE_W, SIZE_H, CHANNELS]
+        images_ph = tf.placeholder(tf.float32, placeholder_shape) # [None, SIZE_W, SIZE_H, CHANNELS] || [None, vector_lentgh]
         labels_ph = tf.placeholder(tf.int32, [None])
 
         images_flatten = tf.contrib.layers.flatten(images_ph)
@@ -286,12 +222,12 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
         train = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()
-    
+
     session = tf.Session(graph=graph)
     _ = session.run([init])
-    
+
     loss_array = []
-    
+
     # train defined tf model.
     for epoch in range(num_of_epochs):
         _, loss_value = session.run([train, loss], feed_dict = {images_ph: images_array, labels_ph: labels_array})
@@ -302,22 +238,93 @@ def main(lr, train_data_dir="../ROI_images/training", test_data_dir="../ROI_imag
     #test the model.
     predicted = session.run([predicted_labels], feed_dict={images_ph: test_images_})[0]
     match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
-    print match_count
-    raw_input()
     accuracy = float(match_count) / float(len(test_labels))
-    
+
     return loss_array, accuracy
 
     
     # create siggNet object.
+
+
+# CHOOSE THE RUNNING MOD OF THE SCRIPT
+def chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size, bin_size, value, num_of_epochs, log_freq):
+    if x == 1: 
+        print "\n[INFO] Feature extractor -> LBP"
+        images_array, labels_array, test_images_, test_labels = get_LBP_Features(train_data_dir, test_data_dir, p=24, r=8)
+        
+        vector_lentgh=len(images_array[0])
+        placeholder_s = [None, vector_lentgh]
+        
+        print ("Running model for learning rate: {}".format(value))
+        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
+            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        print "\n[INFO] Accuracy:" + str(accuracy)
+        plt.plot(loss_array)
+        plt.show()
+
+    elif x == 2:
+        print "\n[INFO] Feature extractor -> HOG"
+        images_array, labels_array, test_images_, test_labels = get_HOG_Features(train_data_dir, test_data_dir, cell_size=16, bin_size=8)
+        
+        vector_lentgh=len(images_array[0])
+        placeholder_s = [None, vector_lentgh]
+
+        print ("Running model for learning rate: {}".format(value))
+        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
+            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        print "\n[INFO] Accuracy:" + str(accuracy)
+        plt.plot(loss_array)
+        plt.show()
+        
+    elif x == 3:
+        print "\n[INFO] Feature extractor -> SIFT"
+        images_array, labels_array, test_images_, test_labels = get_SIFT_Features(train_data_dir, test_data_dir)
+        
+        vector_lentgh=len(images_array[0])
+        placeholder_s = [None, vector_lentgh]
+
+        print ("Running model for learning rate: {}".format(value))
+        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
+            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        print "\n[INFO] Accuracy:" + str(accuracy)
+        plt.plot(loss_array)
+        plt.show()
+
+    else:
+        print "Please choose supported mods 1-9 to run this program."
+        x = int(raw_input('>>> '))
+        print "\n--[RESULTS]--"
+        return chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size, bin_size)
+
+
 
 if __name__ == "__main__":
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-t", "--training", required=True, help="path to the training images")
     ap.add_argument("-e", "--testing", required=True, help="path to the test images")
+    ap.add_argument("-r", "--radius", type=int, default=8, help="radius parameter in LBP implementation")
+    ap.add_argument("-p", "--points", type=int, default=24, help="radius parameter in LBP implementation")
+    ap.add_argument("-c", "--cell_size", type=int, default=16, help="cell_size parameter in HOG implementation")
+    ap.add_argument("-b", "--bin_size", type=int, default=8, help="bin_size parameter in HOG implementation")
+    ap.add_argument("-lr", "--learningR", type=int, default=1e-1, help="learning rate")
+    ap.add_argument("-ep", "--epochs", type=int, default=10000, help="number of epochs")
+    ap.add_argument("-l", "--freq", type=int, default=100, help="log freq")
+
     args = vars(ap.parse_args())
 
+    print """
+	Please choose the running mod you want between 1 - 4,
+		1. LBP
+		2. HOG
+		3. SIFT
+	"""
+    x = int(raw_input('>>> '))
+    print "\n--[RESULTS]--"
+    chooseRunningMod(x, args["training"], args["testing"], 
+        args["radius"], args["points"],args["cell_size"],args["bin_size"],args["learningR"], args["epochs"],args["freq"])
+
+    """
     lr = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
     losses_array = []
     accuracy_array = []
@@ -332,3 +339,4 @@ if __name__ == "__main__":
     plt.plot(lr,accuracy_array)
     plt.show()
     print (accuracy_array)
+    """

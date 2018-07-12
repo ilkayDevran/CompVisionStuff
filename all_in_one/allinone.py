@@ -466,7 +466,7 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		all_samples, labels, samples_amount_of_classes = get_all_samples_HOG(training, cell_size, bin_size)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 	else:
-		print "Please choose supported mods 1-7 to run this program."
+		print "Please choose supported mods 1-9 to run this program."
 		x = int(raw_input('>>> '))
 		print "\n--[RESULTS]--"
 		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points, cell_size, bin_size)
