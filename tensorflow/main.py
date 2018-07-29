@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+'''
+    ##########################################################
+    #                   Python 2.7                           #      
+    # __author__ = "Barış Can Çam, İlkay Tevfik Devran"   	 #   
+    # __date__ = "29.07.2018"                                #
+    # __email__ = "devrani@mef.edu.tr"                       # 
+    ##########################################################
+'''
+
 # USAGE
 # python main.py -t ../images/training  -e ../images/testing
 # python main.py -t ../ROI_images/training -e ../ROI_images/testing
@@ -11,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import pdb
+import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -32,56 +44,62 @@ from sklearn.preprocessing import OneHotEncoder
 
 # GET LBP FEATURES 
 def get_LBP_Features(trainingPath, testingPath ,p=24, r=8):
-	from localbinarypatterns import LocalBinaryPatterns
-	from sklearn.utils import shuffle
+    from localbinarypatterns import LocalBinaryPatterns
+    from sklearn.utils import shuffle
 
-	# initialize the local binary patterns descriptor along with the data and label lists
-	desc = LocalBinaryPatterns(p, r)
-	data = []
-	labels = []
-	test_data = []
-	test_labels = []
+    # initialize the local binary patterns descriptor along with the data and label lists
+    desc = LocalBinaryPatterns(p, r)
+    data = []
+    labels = []
+    test_data = []
+    test_labels = []
 
-	# loop over the training images
-	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
-		
-		# load the image, convert it to grayscale, and describe it
-		image = cv2.imread(imagePath)
-		gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-		resized_image = cv2.resize(gray, (32, 32))
-		hist = desc.describe(resized_image)
-		hist = hist / max(hist)
+    start_time = time.time()
+    # loop over the training images
+    for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+        
+        # load the image, convert it to grayscale, and describe it
+        image = cv2.imread(imagePath)
+        gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+        resized_image = cv2.resize(gray, (32, 32))
+        hist = desc.describe(resized_image)
+        hist = hist / max(hist)
 
-		# extract the label from the image path, then update the
-		# label and data lists
-		labels.append(int(imagePath.split("/")[-2]))
-		data.append(hist)
+        # extract the label from the image path, then update the
+        # label and data lists
+        labels.append(int(imagePath.split("/")[-2]))
+        data.append(hist)
 
-	# loop over the testing images
-	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+    # loop over the testing images
+    for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
 
-		# load the image, convert it to grayscale, describe it, and classify it
-		image = cv2.imread(imagePath)
-		gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
-		resized_image = cv2.resize(gray, (32, 32))
-		hist = desc.describe(resized_image)
-		hist = hist / max(hist)
+        # load the image, convert it to grayscale, describe it, and classify it
+        image = cv2.imread(imagePath)
+        gray = np.matrix(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
+        resized_image = cv2.resize(gray, (32, 32))
+        hist = desc.describe(resized_image)
+        hist = hist / max(hist)
 
-		# extract the label from the image path, then update the
-		# label and data lists
-		test_labels.append(int(imagePath.split("/")[-2]))
-		test_data.append(hist)
+        # extract the label from the image path, then update the
+        # label and data lists
+        test_labels.append(int(imagePath.split("/")[-2]))
+        test_data.append(hist)
 
-	data = np.array(data)
-	labels = np.array(labels)
-	#test_data = np.array(test_data)
-	#test_labels = np.array(test_labels)
+    feature_extraction_runtime = (time.time() - start_time)
 
-	data, labels = shuffle(data,labels)
+    data = np.array(data)
+    labels = np.array(labels)
+    #test_data = np.array(test_data)
+    #test_labels = np.array(test_labels)
 
-	print "[INFO] LBP Features are ready!"
+    data, labels = shuffle(data,labels)
 
-	return (data, labels, test_data, test_labels)
+    print "[INFO] LBP Features are ready!"
+    print "Total image:", len(data) + len(test_data)
+    print "Feature extraction runtime:", feature_extraction_runtime
+    print "Average for one image:", feature_extraction_runtime / (len(data) + len(test_data))
+
+    return (data, labels, test_data, test_labels)
 
 # GET SIFT FEATURES
 def get_SIFT_Features(trainingPath, testingPath):
@@ -127,56 +145,63 @@ def get_SIFT_Features(trainingPath, testingPath):
 
 # GET HOG FEATURES
 def get_HOG_Features(trainingPath, testingPath, cell_size=16, bin_size=8):
-	from hog import Hog_descriptor
+    from hog import Hog_descriptor
 
-	# initialize the local binary patterns descriptor along with the data and label lists
-	data = []
-	labels = []
-	test_data = []
-	test_labels = []
-    
-	# loop over the training images
-	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
-		# open image
-		img = cv2.imread(imagePath)
-		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
-		resized_image = cv2.resize(gray, (48, 48))
+    # initialize the local binary patterns descriptor along with the data and label lists
+    data = []
+    labels = []
+    test_data = []
+    test_labels = []
 
-		# get hog features
-		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
-		vector = hog.extract()
-		v = np.array(vector)
+    start_time = time.time()
+    # loop over the training images
+    for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+        # open image
+        img = cv2.imread(imagePath)
+        gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+        resized_image = cv2.resize(gray, (48, 48))
 
-		# extract the label from the image path, then update the
-		# label and data lists
-		labels.append(int(imagePath.split("/")[-2]))
-		data.append(vector)
+        # get hog features
+        hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+        vector = hog.extract()
+        v = np.array(vector)
 
-	# loop over the testing images
-	for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
-		
-		# open image
-		img = cv2.imread(imagePath)
-		gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
-		resized_image = cv2.resize(gray, (48, 48))
+        # extract the label from the image path, then update the
+        # label and data lists
+        labels.append(int(imagePath.split("/")[-2]))
+        data.append(vector)
 
-		# get hog features
-		hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
-		vector = hog.extract()
+    # loop over the testing images
+    for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+        
+        # open image
+        img = cv2.imread(imagePath)
+        gray = np.matrix(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+        resized_image = cv2.resize(gray, (48, 48))
 
-		# extract the label from the image path, then update the
-		# label and data lists
-		test_labels.append(int(imagePath.split("/")[-2]))
-		test_data.append(vector)
+        # get hog features
+        hog = Hog_descriptor(resized_image, cell_size=cell_size, bin_size=bin_size)
+        vector = hog.extract()
 
-	data = np.array(data)
-	labels = np.array(labels)
-	test_data = np.array(test_data)
-	test_labels = np.array(test_labels)
+        # extract the label from the image path, then update the
+        # label and data lists
+        test_labels.append(int(imagePath.split("/")[-2]))
+        test_data.append(vector)
 
-	print "[INFO] HOG Features are ready!"
+    feature_extraction_runtime = (time.time() - start_time)
 
-	return (data, labels, test_data, test_labels)
+    data = np.array(data)
+    labels = np.array(labels)
+    test_data = np.array(test_data)
+    test_labels = np.array(test_labels)
+
+    print "[INFO] HOG Features are ready!"
+    print "Total image: ", len(data) + len(test_data)
+    print "Feature extraction runtime: ", feature_extraction_runtime
+    print "Average for one image:", feature_extraction_runtime / (len(data) + len(test_data))
+
+
+    return (data, labels, test_data, test_labels)
 
 
 
@@ -275,26 +300,13 @@ def chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size
         print "\n[INFO] Accuracy:" + str(accuracy)
         plt.plot(loss_array)
         plt.show()
-        
-    elif x == 3:
-        print "\n[INFO] Feature extractor -> SIFT"
-        images_array, labels_array, test_images_, test_labels = get_SIFT_Features(train_data_dir, test_data_dir)
-        
-        vector_lentgh=len(images_array[0])
-        placeholder_s = [None, vector_lentgh]
-
-        print ("Running model for learning rate: {}".format(value))
-        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
-            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
-        print "\n[INFO] Accuracy:" + str(accuracy)
-        plt.plot(loss_array)
-        plt.show()
-
+    
     else:
-        print "Please choose supported mods 1-9 to run this program."
+        print "Please choose supported mods 1-2 to run this program."
         x = int(raw_input('>>> '))
         print "\n--[RESULTS]--"
         return chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size, bin_size)
+    
 
 
 
@@ -314,10 +326,9 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
 
     print """
-	Please choose the running mod you want between 1 - 4,
+	Please choose the running mod you want between 1 - 2,
 		1. LBP
 		2. HOG
-		3. SIFT
 	"""
     x = int(raw_input('>>> '))
     print "\n--[RESULTS]--"

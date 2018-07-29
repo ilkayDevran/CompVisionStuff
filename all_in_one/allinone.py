@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+'''
+    ##########################################################
+    #                   Python 2.7                           #      
+    # __author__ = "İlkay Tevfik Devran"   					 #   
+    # __date__ = "29.07.2018"                                #
+    # __email__ = "devrani@mef.edu.tr"                       # 
+    ##########################################################
+'''
+
 # USAGE
 # python allinone.py -t ../ROI_images/training -e ../ROI_images/testing
 # python allinone.py -t ../ROI_images/training -e ../ROI_images/testing -k 10 -j -1 -r 8 -p 24
@@ -11,7 +22,7 @@ import argparse
 import imutils
 import cv2
 import os
-
+import time
 
 
 ########### FEATURE EXTRACTION PART ##############
@@ -27,6 +38,8 @@ def get_LBP_Features(trainingPath, testingPath, p, r):
 	labels = []
 	test_data = []
 	test_labels = []
+	
+	start_time = time.time()
 
 	# loop over the training images
 	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
@@ -58,6 +71,8 @@ def get_LBP_Features(trainingPath, testingPath, p, r):
 		test_labels.append(imagePath.split("/")[-2])
 		test_data.append(hist)
 
+	feature_extraction_runtime = (time.time() - start_time)
+
 	data = np.array(data)
 	labels = np.array(labels)
 	test_data = np.array(test_data)
@@ -66,6 +81,9 @@ def get_LBP_Features(trainingPath, testingPath, p, r):
 	data, labels = shuffle(data,labels)
 
 	print "[INFO] LBP Features are ready!"
+	print "Total image:", len(data) + len(test_data)
+	print "Feature extraction runtime:", feature_extraction_runtime
+	print "Average for one image:", feature_extraction_runtime / (len(data) + len(test_data))
 
 	return (data, labels, test_data, test_labels)
 
@@ -121,6 +139,7 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 	test_data = []
 	test_labels = []
     
+	start_time = time.time()
 	# loop over the training images
 	for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
 		# open image
@@ -155,12 +174,17 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 		test_labels.append(imagePath.split("/")[-2])
 		test_data.append(vector)
 
+	feature_extraction_runtime = (time.time() - start_time)
+
 	data = np.array(data)
 	labels = np.array(labels)
 	test_data = np.array(test_data)
 	test_labels = np.array(test_labels)
 
 	print "[INFO] HOG Features are ready!"
+	print "Total image: ", len(data) + len(test_data)
+	print "Feature extraction runtime: ", feature_extraction_runtime
+	print "Average for one image:", feature_extraction_runtime / (len(data) + len(test_data))
 
 	return (data, labels, test_data, test_labels)
 
@@ -428,45 +452,33 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 
 	elif x == 2:
-		print "\n[INFO] SIFT-KNN"	# COMPLETE
-		(key_points, descriptors, labels, test_key_points, test_descriptors, test_labels) = get_SIFT_Features(training, testing)
-		kNN(descriptors, labels, test_descriptors, test_labels, neighbors, jobs)
-
-	elif x == 3:
 		print "\n[INFO] HOG-KNN"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
 
-	elif x == 4:
+	elif x == 3:
 		print "\n[INFO] LBP-SVM"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
 		SVM(data, labels, test_data, test_labels)
 
-	elif x == 5:
-		print "\n[INFO] SIFT-SVM"	# COMPLETE
-
-	elif x == 6:
+	elif x == 4:
 		print "\n[INFO] HOG-SVM"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
 		SVM(data, labels, test_data, test_labels)
 
-	elif x == 7:
+	elif x == 5:
 		print "\n[INFO] PCA of LBP"
 		all_samples, labels, samples_amount_of_classes = get_all_samples_LBP(training, p=points, r=radius)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
 
-	elif x == 8:
-		print "\n[INFO] PCA of SIFT"	# COMPLETE
-		all_samples, labels, samples_amount_of_classes = get_all_samples_SIFT(training)
-		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
-
-	elif x == 9:
+	elif x == 6:
 		print "\n[INFO] PCA of HOG"
 		# get all_samples list
 		all_samples, labels, samples_amount_of_classes = get_all_samples_HOG(training, cell_size, bin_size)
 		use_sklearn(all_samples, labels, samples_amount_of_classes, plot_it=True)
+
 	else:
-		print "Please choose supported mods 1-9 to run this program."
+		print "Please choose supported mods 1-6 to run this program."
 		x = int(raw_input('>>> '))
 		print "\n--[RESULTS]--"
 		return chooseRunningMod(x, training, testing,neighbors, jobs, radius, points, cell_size, bin_size)
@@ -498,19 +510,16 @@ if __name__ == '__main__':
 	args = vars(ap.parse_args())
 
 	print """
-	Please choose the running mod you want between 1-9,
+	Please choose the running mod you want between 1-6,
 	Using k-NN as clasifier with:
 		1. LBP
-		2. SIFT
-		3. HOG
+		2. HOG
 	Using SVM as clasifier with:
-		4. LBP
-		5. SIFT
-		6. HOG
+		3. LBP
+		4. HOG
 	To see PCA of:
-		7. LBP
-		8. SIFT
-		9. HOG
+		5. LBP
+		6. HOG
 	"""
 	x = int(raw_input('>>> '))
 	print "\n--[RESULTS]--"
