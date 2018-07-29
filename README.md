@@ -1,13 +1,13 @@
 
 # ComputerVisionStuff
-
+---
 This repostory includes the implementations of various approaches to [Traffic-sign recognition](http://www.wiki-zero.org/index.php?q=aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVHJhZmZpYy1zaWduX3JlY29nbml0aW9u). 
 ![alt text](https://raw.githubusercontent.com/ilkayDevran/CompVisionStuff/master/readme-images/traffic-sign-recognition.png)
 
 
 
 # What are these aproaches?
-
+---
 Training different machine learning classifiers with extracted features using various conventional computer vision algorithms. 
 
  ##### Computer vision algorithms
@@ -22,6 +22,6 @@ Training different machine learning classifiers with extracted features using va
 
 
 # The big picture
-
-![alt text](https://raw.githubusercontent.com/ilkayDevran/CompVisionStuff/master/readme-images/approaches.png)
+---
+![alt text](https://raw.githubusercontent.com/ilkayDevran/Traffic_Sign_Recognition/master/readme-images/aproaches2.png)
 
