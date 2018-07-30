@@ -449,22 +449,35 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 	if x == 1: 
 		print "\n[INFO] LBP-KNN"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
+		start_time = time.time()
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
+		kNN_runtime = (time.time() - start_time)
+		print "kNN runtime:", kNN_runtime, "\n"
 
 	elif x == 2:
 		print "\n[INFO] HOG-KNN"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
+		start_time = time.time()
 		kNN(data, labels, test_data, test_labels, neighbors, jobs)
+		kNN_runtime = (time.time() - start_time)
+		print "kNN runtime:", kNN_runtime, "\n"
+
 
 	elif x == 3:
 		print "\n[INFO] LBP-SVM"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
+		start_time = time.time()
 		SVM(data, labels, test_data, test_labels)
+		SVM_runtime = (time.time() - start_time)
+		print "SVM runtime:", SVM_runtime, "\n"
 
 	elif x == 4:
 		print "\n[INFO] HOG-SVM"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
+		start_time = time.time()
 		SVM(data, labels, test_data, test_labels)
+		SVM_runtime = (time.time() - start_time)
+		print "SVM runtime:", SVM_runtime, "\n"
 
 	elif x == 5:
 		print "\n[INFO] PCA of LBP"

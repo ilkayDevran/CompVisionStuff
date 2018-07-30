@@ -28,7 +28,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 from imutils import paths
 import argparse
@@ -38,6 +37,28 @@ from localbinarypatterns import LocalBinaryPatterns
 from torch.autograd import Variable
 from sklearn.preprocessing import OneHotEncoder
 
+
+def load_data(trainingPath, testingPath):
+    data = []
+    labels = []
+    test_data = []
+    test_labels = []
+
+    # loop over the training images
+    for imagePath in paths.list_files(trainingPath, validExts=(".png",".ppm")):
+        image = skimage.data.imread(imagePath)
+        resized_image = skimage.transform.resize(image, (32, 32, 3))
+        labels.append(int(imagePath.split("/")[-2]))
+        data.append(resized_image)
+    
+     # loop over the test images
+    for imagePath in paths.list_files(testingPath, validExts=(".png",".ppm")):
+        image = skimage.data.imread(imagePath)
+        resized_image = skimage.transform.resize(image, (32, 32, 3))
+        test_labels.append(int(imagePath.split("/")[-2]))
+        test_data.append(resized_image)
+
+    return (data, labels, test_data, test_labels)
 
 
 ########### FEATURE EXTRACTION PART ##############
@@ -219,14 +240,8 @@ class signNet(torch.nn.Module):
         actvOut = self.relu(linearOut)
         return F.log_softmax(actvOut)
 
-def main(lr, train_data_dir, test_data_dir, images_array, labels_array, test_images_, test_labels, placeholder_shape, num_of_epochs, log_freq):
+def main(lr, images_array, labels_array, test_images_, test_labels, placeholder_shape, num_of_epochs, log_freq):
 
-    # define globals.
-    SIZE_W = 32
-    SIZE_H = 32
-    CHANNELS = 3
-
-    d_in = SIZE_W * SIZE_H * CHANNELS
     d_out = 62
 
     learning_rate = lr
@@ -243,7 +258,7 @@ def main(lr, train_data_dir, test_data_dir, images_array, labels_array, test_ima
 
         predicted_labels = tf.argmax(logits, 1)
         
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits                                                                                      ,labels = labels_ph))
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels_ph))
         train = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()
@@ -253,12 +268,16 @@ def main(lr, train_data_dir, test_data_dir, images_array, labels_array, test_ima
 
     loss_array = []
 
+    start_time = time.time()
     # train defined tf model.
     for epoch in range(num_of_epochs):
         _, loss_value = session.run([train, loss], feed_dict = {images_ph: images_array, labels_ph: labels_array})
         if epoch % log_freq == 0:
             print("Loss at instance {}/{}: {}".format(epoch+log_freq, num_of_epochs, loss_value))
             loss_array.append(loss_value)
+
+    training_runtime = (time.time() - start_time)
+    print "\n[INFO] Average Training Runtime for each epoch:", training_runtime / epoch
 
     #test the model.
     predicted = session.run([predicted_labels], feed_dict={images_ph: test_images_})[0]
@@ -268,7 +287,6 @@ def main(lr, train_data_dir, test_data_dir, images_array, labels_array, test_ima
     return loss_array, accuracy
 
     
-    # create siggNet object.
 
 
 # CHOOSE THE RUNNING MOD OF THE SCRIPT
@@ -281,8 +299,7 @@ def chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size
         placeholder_s = [None, vector_lentgh]
         
         print ("Running model for learning rate: {}".format(value))
-        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
-            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        loss_array, accuracy = main(value, images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
         print "\n[INFO] Accuracy:" + str(accuracy)
         plt.plot(loss_array)
         plt.show()
@@ -301,8 +318,19 @@ def chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size
         plt.plot(loss_array)
         plt.show()
     
+    elif x == 3:
+        print "\n[INFO] Only Intensity"
+        images_array, labels_array, test_images_, test_labels = load_data(train_data_dir, test_data_dir)
+        placeholder_s = [None, 32, 32, 3]
+
+        print ("Running model for learning rate: {}".format(value))
+        loss_array, accuracy = main(value, images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        print "\n[INFO] Accuracy:" + str(accuracy)
+        plt.plot(loss_array)
+        plt.show()
+    
     else:
-        print "Please choose supported mods 1-2 to run this program."
+        print "Please choose supported mods 1-3 to run this program."
         x = int(raw_input('>>> '))
         print "\n--[RESULTS]--"
         return chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size, bin_size)
@@ -320,34 +348,18 @@ if __name__ == "__main__":
     ap.add_argument("-c", "--cell_size", type=int, default=16, help="cell_size parameter in HOG implementation")
     ap.add_argument("-b", "--bin_size", type=int, default=8, help="bin_size parameter in HOG implementation")
     ap.add_argument("-lr", "--learningR", type=int, default=1e-1, help="learning rate")
-    ap.add_argument("-ep", "--epochs", type=int, default=10000, help="number of epochs")
+    ap.add_argument("-ep", "--epochs", type=int, default=1000, help="number of epochs")
     ap.add_argument("-l", "--freq", type=int, default=100, help="log freq")
 
     args = vars(ap.parse_args())
 
     print """
-	Please choose the running mod you want between 1 - 2,
-		1. LBP
-		2. HOG
+    Please choose the running mod you want between 1 - 2,
+        1. LBP
+        2. HOG
+        3. Only Intensity
 	"""
     x = int(raw_input('>>> '))
     print "\n--[RESULTS]--"
     chooseRunningMod(x, args["training"], args["testing"], 
         args["radius"], args["points"],args["cell_size"],args["bin_size"],args["learningR"], args["epochs"],args["freq"])
-
-    """
-    lr = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
-    losses_array = []
-    accuracy_array = []
-    for value in lr:
-        print ("Running model for learning rate: {}".format(value))
-        loss_array, accuracy = main(value, args["training"], args["testing"])
-        losses_array.append(loss_array)
-        accuracy_array.append(accuracy)
-        print "\n[INFO] Accuracy:" + str(accuracy)
-        plt.plot(loss_array)
-        plt.show()
-    plt.plot(lr,accuracy_array)
-    plt.show()
-    print (accuracy_array)
-    """
