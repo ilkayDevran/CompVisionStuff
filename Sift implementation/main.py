@@ -8,6 +8,7 @@ import os
 import argparse
 from pycm import *
 from random import randint
+import time 
 
 class PaintingMatcher:
     def __init__(self, descriptor, groundTruthsPath, ratio = 0.7, minMatches = 40):
@@ -131,21 +132,25 @@ def main():
     src_files = os.listdir(src) 
     
     count = 0 # to show the progress
+    total_time = 0
+    
     for image in src_files:
         if image.startswith('.') or image.endswith('.txt'):
 			pass
         else:
             count = count+1
             print (count,len(src_files))
-            print image
+            #print image
             full_file_name = os.path.join(src, image)
 
             # load the query image, convert it to grayscale, and extract
             # keypoints and descriptors
             queryImage = cv2.imread(full_file_name)  # the query image
             gray = cv2.cvtColor(queryImage, cv2.COLOR_BGR2GRAY)
+            start_time = time.time()
             (queryKps, queryDescs) = pd.describe(gray)
-            print "Number of keypoints for query:",str(len(queryKps))
+            total_time += (time.time() - start_time)
+            #print "Number of keypoints for query:",str(len(queryKps))
             
             # try to match the book painting to a known database of images
             results = pm.search(queryKps, queryDescs)
@@ -155,15 +160,15 @@ def main():
 
             # check to see if no results were found
             if len(results) == 0:
-                print("Cannot not find a match for that sign!")
-
+                #print("Cannot not find a match for that sign!")
+                pass
             # otherwise, matches were found
             else:
                 # prediction part is in here...
                 score, groundTruth = results[0]
                 (classOfSign, classNo) = db[groundTruth[groundTruth.rfind("/") + 1:]]
-                print("{}. {:.2f}% : {} - {}".format(1, score * 100,
-                    classOfSign, classNo))
+                #print("{}. {:.2f}% : {} - {}".format(1, score * 100,
+                    #classOfSign, classNo))
 
                 # Some string manipulation stuffs to get actual and predicted values to append into vectors
                 classNoInString = image.index('.')
@@ -173,9 +178,9 @@ def main():
                 y_pred.append(outpt)
         
             print "\n"
-    
+    print "Average Runtime of feature extraction:", total_time/len(src_files)
     # get the experiment results
-    calculateConfusionMatrix(inp=y_act, out=y_pred)
+    #calculateConfusionMatrix(inp=y_act, out=y_pred)
 
 # show results of Confusion Matrix calculations
 def calculateConfusionMatrix(inp, out):
