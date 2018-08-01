@@ -194,24 +194,40 @@ def get_HOG_Features(trainingPath, testingPath, cell_size, bin_size):
 # USE kNN Classifier
 def kNN(data, labels, test_data, test_labels, neighbors, jobs):
 
+	
 	# train and evaluate a k-NN classifer
 	model = KNeighborsClassifier(n_neighbors=neighbors, n_jobs=jobs)
+	start_time = time.time()
 	model.fit(data, labels)
+	train_runtime = (time.time() - start_time)
+	print "\nk-NN training runtime:", train_runtime
+
+	# test
+	start_time = time.time()
 	acc = model.score(test_data, test_labels)
+	test_runtime = (time.time() - start_time)
+	print "k-NN test runtime:", test_runtime, "\n"
+
 	print("[INFO] accuracy: {:.2f}%".format(acc * 100))
 
 # USE SVM Classifier
 def SVM(data, labels, test_data, test_labels, best_kernel='linear', best_gamma='30'):
 	from sklearn import svm
 
+	start_time = time.time()
 	# train a Linear SVM on the data
 	model = svm.SVC(C=852.25, kernel=best_kernel)
 	model.fit(data, labels)
+	train_runtime = (time.time() - start_time)
+	print "\nSVM training runtime:", train_runtime
 
+	start_time = time.time()
 	predicted=[]
 	for d in test_data:
 		p = model.predict([d])[0]
 		predicted.append(p)
+	test_runtime = (time.time() - start_time)
+	print "SVM test runtime:", test_runtime, "\n"
 		
 	match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
 	acc = float(match_count) / float(len(test_labels))
@@ -466,18 +482,12 @@ def chooseRunningMod(x, training, testing , neighbors, jobs, radius, points, cel
 	elif x == 3:
 		print "\n[INFO] LBP-SVM"
 		(data, labels, test_data, test_labels) = get_LBP_Features(training, testing, p=points, r=radius)
-		start_time = time.time()
 		SVM(data, labels, test_data, test_labels)
-		SVM_runtime = (time.time() - start_time)
-		print "SVM runtime:", SVM_runtime, "\n"
 
 	elif x == 4:
 		print "\n[INFO] HOG-SVM"
 		(data, labels, test_data, test_labels) = get_HOG_Features(training, testing, cell_size, bin_size)
-		start_time = time.time()
 		SVM(data, labels, test_data, test_labels)
-		SVM_runtime = (time.time() - start_time)
-		print "SVM runtime:", SVM_runtime, "\n"
 
 	elif x == 5:
 		print "\n[INFO] PCA of LBP"

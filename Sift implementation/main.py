@@ -147,6 +147,7 @@ def main():
             # keypoints and descriptors
             queryImage = cv2.imread(full_file_name)  # the query image
             gray = cv2.cvtColor(queryImage, cv2.COLOR_BGR2GRAY)
+
             start_time = time.time()
             (queryKps, queryDescs) = pd.describe(gray)
             total_time += (time.time() - start_time)
@@ -178,7 +179,7 @@ def main():
                 y_pred.append(outpt)
         
             print "\n"
-    print "Average Runtime of feature extraction:", total_time/len(src_files)
+    print "\nAverage Runtime of feature extraction:", total_time/len(src_files)
     # get the experiment results
     #calculateConfusionMatrix(inp=y_act, out=y_pred)
 

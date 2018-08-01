@@ -277,10 +277,15 @@ def main(lr, images_array, labels_array, test_images_, test_labels, placeholder_
             loss_array.append(loss_value)
 
     training_runtime = (time.time() - start_time)
-    print "\n[INFO] Average Training Runtime for each epoch:", training_runtime / epoch
+    print "\nANN Training time:", training_runtime
+    print "[INFO] Average Training Runtime for each epoch:", training_runtime / epoch
 
-    #test the model.
+    start_time = time.time()
+    # test the model
     predicted = session.run([predicted_labels], feed_dict={images_ph: test_images_})[0]
+    test_runtime = (time.time() - start_time)
+    print "ANN Test time:", training_runtime, "\n"
+
     match_count = sum([int(y==y_) for y, y_ in zip(test_labels, predicted)])
     accuracy = float(match_count) / float(len(test_labels))
 
@@ -312,8 +317,7 @@ def chooseRunningMod(x, train_data_dir, test_data_dir, radius, points, cell_size
         placeholder_s = [None, vector_lentgh]
 
         print ("Running model for learning rate: {}".format(value))
-        loss_array, accuracy = main(value, train_data_dir, test_data_dir, 
-            images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
+        loss_array, accuracy = main(value, images_array, labels_array, test_images_, test_labels, placeholder_shape=placeholder_s, num_of_epochs=num_of_epochs, log_freq=log_freq)
         print "\n[INFO] Accuracy:" + str(accuracy)
         plt.plot(loss_array)
         plt.show()
